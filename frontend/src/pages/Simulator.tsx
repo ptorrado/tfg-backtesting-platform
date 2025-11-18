@@ -63,18 +63,23 @@ export interface SimulationPayload {
 const Simulator: React.FC = () => {
   const navigate = useNavigate()
 
-  const [assetType, setAssetType] = useState<AssetCategoryKey>("stocks")
   const [assetName, setAssetName] = useState<string>("")
   const [algorithm, setAlgorithm] = useState<string>("")
   const [startDate, setStartDate] = useState<string>("2023-01-01")
   const [endDate, setEndDate] = useState<string>("2024-01-01")
-  const [initialInvestment, setInitialInvestment] = useState<number>(10000)
+  const [initialInvestment, setInitialInvestment] =
+    useState<number>(10000)
   const [isRunning, setIsRunning] = useState<boolean>(false)
+
+  // asset category
+  const [assetType, setAssetType] =
+    useState<AssetCategoryKey>("stocks")
 
   // Batch mode
   const [batchMode, setBatchMode] = useState<boolean>(false)
   const [batchName, setBatchName] = useState<string>("")
-  const [batchType, setBatchType] = useState<"assets" | "algorithms">("assets")
+  const [batchType, setBatchType] =
+    useState<"assets" | "algorithms">("assets")
   const [selectedAssets, setSelectedAssets] = useState<string[]>([])
   const [selectedAlgorithms, setSelectedAlgorithms] = useState<string[]>([])
   const [baseAsset, setBaseAsset] = useState<string>("")
@@ -82,8 +87,10 @@ const Simulator: React.FC = () => {
 
   // Advanced mode
   const [advancedMode, setAdvancedMode] = useState<boolean>(false)
-  const [algorithmParams, setAlgorithmParams] = useState<AlgoParams>({})
-  const [multiAlgoParams, setMultiAlgoParams] = useState<MultiAlgoParams>({})
+  const [algorithmParams, setAlgorithmParams] =
+    useState<AlgoParams>({})
+  const [multiAlgoParams, setMultiAlgoParams] =
+    useState<MultiAlgoParams>({})
 
   const generatePriceData = (days: number): number[] => {
     const prices: number[] = []
@@ -119,11 +126,15 @@ const Simulator: React.FC = () => {
       if (i >= lookback && i < prices.length - lookback) {
         const isLocalMin =
           prices.slice(i - lookback, i).every((p) => p >= prices[i]) &&
-          prices.slice(i + 1, i + lookback + 1).every((p) => p >= prices[i])
+          prices.slice(i + 1, i + lookback + 1).every(
+            (p) => p >= prices[i]
+          )
 
         const isLocalMax =
           prices.slice(i - lookback, i).every((p) => p <= prices[i]) &&
-          prices.slice(i + 1, i + lookback + 1).every((p) => p <= prices[i])
+          prices.slice(i + 1, i + lookback + 1).every(
+            (p) => p <= prices[i]
+          )
 
         if (isLocalMin && position === null && cash > 0) {
           shares = cash / prices[i]
@@ -168,12 +179,17 @@ const Simulator: React.FC = () => {
     params: AlgoParams | MultiAlgoParams = {}
   ): SimulationPayload => {
     const days = Math.ceil(
-      (new Date(endDate).getTime() - new Date(startDate).getTime()) /
+      (new Date(endDate).getTime() -
+        new Date(startDate).getTime()) /
         (1000 * 60 * 60 * 24)
     )
 
     const prices = generatePriceData(days)
-    const benchmark = generateBenchmarkData(prices, initialInvestment, startDate)
+    const benchmark = generateBenchmarkData(
+      prices,
+      initialInvestment,
+      startDate
+    )
 
     const equityCurve: EquityPoint[] = []
     const trades: Trade[] = []
@@ -228,30 +244,42 @@ const Simulator: React.FC = () => {
 
     const finalValue = equityCurve[equityCurve.length - 1].value
     const profitLoss = finalValue - initialInvestment
-    const profitLossPercentage = (profitLoss / initialInvestment) * 100
+    const profitLossPercentage =
+      (profitLoss / initialInvestment) * 100
 
-    const winningTrades = trades.filter((t) => t.profit_loss > 0).length
-    const losingTrades = trades.filter((t) => t.profit_loss < 0).length
+    const winningTrades = trades.filter(
+      (t) => t.profit_loss > 0
+    ).length
+    const losingTrades = trades.filter(
+      (t) => t.profit_loss < 0
+    ).length
     const accuracy =
-      trades.length > 0 ? (winningTrades / trades.length) * 100 : 0
+      trades.length > 0
+        ? (winningTrades / trades.length) * 100
+        : 0
 
     const returns = equityCurve.map((point, i) => {
       if (i === 0) return 0
       return (
-        (point.value - equityCurve[i - 1].value) / equityCurve[i - 1].value
+        (point.value - equityCurve[i - 1].value) /
+        equityCurve[i - 1].value
       )
     })
 
     const avgReturn =
-      returns.reduce((a, b) => a + b, 0) / (returns.length || 1)
+      returns.reduce((a, b) => a + b, 0) /
+      (returns.length || 1)
     const stdDev =
       returns.length === 0
         ? 0
         : Math.sqrt(
-            returns.reduce((sq, r) => sq + Math.pow(r - avgReturn, 2), 0) /
-              returns.length
+            returns.reduce(
+              (sq, r) => sq + Math.pow(r - avgReturn, 2),
+              0
+            ) / returns.length
           )
-    const sharpeRatio = stdDev !== 0 ? (avgReturn / stdDev) * Math.sqrt(252) : 0
+    const sharpeRatio =
+      stdDev !== 0 ? (avgReturn / stdDev) * Math.sqrt(252) : 0
 
     let maxDrawdown = 0
     let peak = equityCurve[0].value
@@ -263,7 +291,10 @@ const Simulator: React.FC = () => {
 
     const efficiencyRatio =
       benchmark.profit_loss > 0
-        ? Math.min(100, Math.max(0, (profitLoss / benchmark.profit_loss) * 100))
+        ? Math.min(
+            100,
+            Math.max(0, (profitLoss / benchmark.profit_loss) * 100)
+          )
         : profitLoss >= 0
         ? 100
         : 0
@@ -289,7 +320,8 @@ const Simulator: React.FC = () => {
       trades,
       benchmark_final_value: benchmark.final_value,
       benchmark_profit_loss: benchmark.profit_loss,
-      benchmark_profit_loss_percentage: benchmark.profit_loss_percentage,
+      benchmark_profit_loss_percentage:
+        benchmark.profit_loss_percentage,
       benchmark_equity_curve: benchmark.equity_curve,
       efficiency_ratio: efficiencyRatio,
     }
@@ -297,8 +329,13 @@ const Simulator: React.FC = () => {
 
   const runSimulation = async () => {
     if (batchMode) {
-      if (batchType === "assets" && selectedAssets.length < 2) return
-      if (batchType === "algorithms" && selectedAlgorithms.length < 2) return
+      if (batchType === "assets" && selectedAssets.length < 2)
+        return
+      if (
+        batchType === "algorithms" &&
+        selectedAlgorithms.length < 2
+      )
+        return
       if (!batchName) return
 
       setIsRunning(true)
@@ -309,7 +346,11 @@ const Simulator: React.FC = () => {
       if (batchType === "assets") {
         for (const asset of selectedAssets) {
           const params = advancedMode ? algorithmParams : {}
-          const simData = generateSimulationData(asset, baseAlgorithm, params)
+          const simData = generateSimulationData(
+            asset,
+            baseAlgorithm,
+            params
+          )
           await base44.entities.Simulation.create({
             ...simData,
             is_batch: true,
@@ -319,8 +360,14 @@ const Simulator: React.FC = () => {
         }
       } else {
         for (const algo of selectedAlgorithms) {
-          const params = advancedMode ? multiAlgoParams[algo] || {} : {}
-          const simData = generateSimulationData(baseAsset, algo, params)
+          const params = advancedMode
+            ? multiAlgoParams[algo] || {}
+            : {}
+          const simData = generateSimulationData(
+            baseAsset,
+            algo,
+            params
+          )
           await base44.entities.Simulation.create({
             ...simData,
             is_batch: true,
@@ -333,18 +380,31 @@ const Simulator: React.FC = () => {
       setIsRunning(false)
       navigate(createPageUrl("Results") + `?batch_id=${batchId}`)
     } else {
-      if (!assetName || !algorithm || !startDate || !endDate || !initialInvestment)
+      if (
+        !assetName ||
+        !algorithm ||
+        !startDate ||
+        !endDate ||
+        !initialInvestment
+      )
         return
 
       setIsRunning(true)
       await new Promise((resolve) => setTimeout(resolve, 2000))
 
       const params = advancedMode ? algorithmParams : {}
-      const simulationData = generateSimulationData(assetName, algorithm, params)
-      const simulation = await base44.entities.Simulation.create(simulationData)
+      const simulationData = generateSimulationData(
+        assetName,
+        algorithm,
+        params
+      )
+      const simulation =
+        await base44.entities.Simulation.create(simulationData)
 
       setIsRunning(false)
-      navigate(createPageUrl("Results") + `?id=${simulation.id}`)
+      navigate(
+        createPageUrl("Results") + `?id=${simulation.id}`
+      )
     }
   }
 
@@ -356,13 +416,19 @@ const Simulator: React.FC = () => {
         (batchType === "algorithms" &&
           selectedAlgorithms.length >= 2 &&
           !!baseAsset))
-    : assetName && algorithm && startDate && endDate && initialInvestment >= 100
+    : assetName &&
+      algorithm &&
+      startDate &&
+      endDate &&
+      initialInvestment >= 100
 
   return (
     <div className="min-h-screen bg-[#0f1419] p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-100 mb-2">New Simulation</h1>
+          <h1 className="text-3xl font-bold text-gray-100 mb-2">
+            New Simulation
+          </h1>
           <p className="text-gray-400 text-sm">
             Configure parameters and backtest your trading strategy
           </p>
@@ -386,6 +452,7 @@ const Simulator: React.FC = () => {
                 batchType={batchType}
                 setBatchType={setBatchType}
                 assetType={assetType}
+                setAssetType={setAssetType}
                 selectedAssets={selectedAssets}
                 setSelectedAssets={setSelectedAssets}
                 selectedAlgorithms={selectedAlgorithms}
@@ -415,8 +482,9 @@ const Simulator: React.FC = () => {
           </>
         ) : (
           <>
-            <div className="grid lg:grid-cols-2 gap-6 mb-6">
-              <div>
+            {/* ARRIBA: Asset Selection + Trading Algorithm */}
+            <div className="grid lg:grid-cols-2 gap-6 mb-6 items-stretch">
+              <div className="h-full">
                 <AssetSelector
                   assetType={assetType}
                   setAssetType={setAssetType}
@@ -425,32 +493,37 @@ const Simulator: React.FC = () => {
                 />
               </div>
 
-              <div>
-                <ConfigPanel
-                  startDate={startDate}
-                  setStartDate={setStartDate}
-                  endDate={endDate}
-                  setEndDate={setEndDate}
-                  initialInvestment={initialInvestment}
-                  setInitialInvestment={setInitialInvestment}
+              <div className="h-full">
+                <AlgorithmSelector
+                  multiMode={false}
+                  algorithm={algorithm}
+                  setAlgorithm={setAlgorithm}
+                  advancedMode={advancedMode}
+                  algorithmParams={algorithmParams}
+                  setAlgorithmParams={setAlgorithmParams}
                 />
               </div>
             </div>
 
+            {/* CHART (opcional) */}
             {assetName && (
               <div className="mb-6">
-                <PriceChart assetName={assetName} assetType={assetType} />
+                <PriceChart
+                  assetName={assetName}
+                  assetType={assetType}
+                />
               </div>
             )}
 
+            {/* ABAJO: Configuration a todo el ancho */}
             <div className="mb-6">
-              <AlgorithmSelector
-                multiMode={false}
-                algorithm={algorithm}
-                setAlgorithm={setAlgorithm}
-                advancedMode={advancedMode}
-                algorithmParams={algorithmParams}
-                setAlgorithmParams={setAlgorithmParams}
+              <ConfigPanel
+                startDate={startDate}
+                setStartDate={setStartDate}
+                endDate={endDate}
+                setEndDate={setEndDate}
+                initialInvestment={initialInvestment}
+                setInitialInvestment={setInitialInvestment}
               />
             </div>
           </>
@@ -465,12 +538,18 @@ const Simulator: React.FC = () => {
           >
             {isRunning ? (
               <>
-                <Loader2 className="w-5 h-5 mr-2 animate-spin" strokeWidth={2} />
+                <Loader2
+                  className="w-5 h-5 mr-2 animate-spin"
+                  strokeWidth={2}
+                />
                 Running {batchMode ? "Multi-" : ""}Simulation
               </>
             ) : (
               <>
-                <PlayCircle className="w-5 h-5 mr-2" strokeWidth={2} />
+                <PlayCircle
+                  className="w-5 h-5 mr-2"
+                  strokeWidth={2}
+                />
                 Run {batchMode ? "Multi-" : ""}Simulation
               </>
             )}

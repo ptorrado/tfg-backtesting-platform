@@ -1,6 +1,6 @@
 import React from "react"
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom"
-import Layout from "./components/layout/Layout"
+import Layout from "./layout/Layout"
 import Simulator from "./pages/Simulator"
 import Results from "./pages/Result"
 import History from "./pages/History"

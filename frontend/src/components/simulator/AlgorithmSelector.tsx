@@ -1,86 +1,21 @@
 import React, { useMemo, useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card"
+import { Card, CardHeader, CardTitle, CardContent } from "../ui/card"
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../ui/select"
-import { Label } from "../ui/label"
-import { Input } from "../ui/input"
-import {
-  Bot,
-  TrendingUp,
-  Activity,
-  Target,
-  Zap,
-  X,
   Search,
+  ChevronDown,
+  Check,
+  SlidersHorizontal,
+  Brain,
 } from "lucide-react"
 
-export type AlgoParams = Record<string, string | number>
+export type AlgoParams = Record<string, number | "">
 export type MultiAlgoParams = Record<string, AlgoParams>
 
-const algorithms = [
-  {
-    id: "moving_average_crossover",
-    name: "Moving Average Crossover",
-    description: "Buy when short MA crosses above long MA, sell when it crosses below",
-    icon: TrendingUp,
-    params: [
-      { key: "short_window", label: "Short Window", default: 20, min: 5, max: 50 },
-      { key: "long_window", label: "Long Window", default: 50, min: 20, max: 200 },
-    ],
-  },
-  {
-    id: "rsi_strategy",
-    name: "RSI Strategy",
-    description: "Buy when RSI is oversold, sell when overbought",
-    icon: Activity,
-    params: [
-      { key: "rsi_period", label: "RSI Period", default: 14, min: 5, max: 30 },
-      { key: "rsi_oversold", label: "Oversold Level", default: 30, min: 20, max: 40 },
-      { key: "rsi_overbought", label: "Overbought Level", default: 70, min: 60, max: 80 },
-    ],
-  },
-  {
-    id: "momentum",
-    name: "Momentum Trading",
-    description: "Follow strong price trends and momentum indicators",
-    icon: Zap,
-    params: [
-      { key: "momentum_period", label: "Momentum Period", default: 10, min: 5, max: 30 },
-      { key: "momentum_threshold", label: "Threshold %", default: 2, min: 1, max: 5 },
-    ],
-  },
-  {
-    id: "mean_reversion",
-    name: "Mean Reversion",
-    description: "Buy when price deviates significantly below average, sell above",
-    icon: Target,
-    params: [
-      { key: "mean_reversion_period", label: "Period", default: 20, min: 10, max: 50 },
-      { key: "mean_reversion_std", label: "Std Deviations", default: 2, min: 1, max: 3 },
-    ],
-  },
-  {
-    id: "breakout",
-    name: "Breakout Strategy",
-    description: "Enter positions when price breaks through support/resistance levels",
-    icon: TrendingUp,
-    params: [
-      { key: "breakout_period", label: "Lookback Period", default: 20, min: 10, max: 50 },
-      { key: "breakout_threshold", label: "Breakout %", default: 1.5, min: 0.5, max: 3 },
-    ],
-  },
-]
-
-interface BaseProps {
+type BaseProps = {
   advancedMode: boolean
 }
 
-interface SingleModeProps extends BaseProps {
+type SingleModeProps = BaseProps & {
   multiMode?: false
   algorithm: string
   setAlgorithm: (algo: string) => void
@@ -88,7 +23,7 @@ interface SingleModeProps extends BaseProps {
   setAlgorithmParams: React.Dispatch<React.SetStateAction<AlgoParams>>
 }
 
-interface MultiModeProps extends BaseProps {
+type MultiModeProps = BaseProps & {
   multiMode: true
   selectedAlgorithms: string[]
   setSelectedAlgorithms: (algs: string[]) => void
@@ -96,355 +31,457 @@ interface MultiModeProps extends BaseProps {
   setMultiAlgoParams: React.Dispatch<React.SetStateAction<MultiAlgoParams>>
 }
 
-type AlgorithmSelectorProps = SingleModeProps | MultiModeProps
+export type AlgorithmSelectorProps = SingleModeProps | MultiModeProps
+
+type AlgorithmDef = {
+  id: string
+  label: string
+  description: string
+}
+
+const ALGORITHMS: AlgorithmDef[] = [
+  {
+    id: "sma_crossover",
+    label: "SMA Crossover",
+    description:
+      "Dual simple moving average strategy that goes long when the short SMA crosses above the long SMA.",
+  },
+  {
+    id: "ema_crossover",
+    label: "EMA Crossover",
+    description:
+      "Similar to SMA crossover but using exponential moving averages, reacting faster to recent price changes.",
+  },
+  {
+    id: "donchian_breakout",
+    label: "Donchian Breakout",
+    description:
+      "Trend-following strategy that buys on breakouts above a price channel and sells on breakdowns.",
+  },
+  {
+    id: "rsi_reversion",
+    label: "RSI Mean Reversion",
+    description:
+      "Mean-reversion approach based on the RSI indicator, buying oversold conditions and selling overbought ones.",
+  },
+  {
+    id: "buy_and_hold",
+    label: "Buy & Hold Baseline",
+    description:
+      "Simple benchmark: invest at the start date and hold the position until the end of the simulation.",
+  },
+]
+
+type ParamDef = {
+  key: string
+  label: string
+  min: number
+  max: number
+  step: number
+  defaultValue: number
+}
+
+const ALGO_PARAM_DEFS: Record<string, ParamDef[]> = {
+  sma_crossover: [
+    {
+      key: "short_window",
+      label: "Short SMA window",
+      min: 5,
+      max: 50,
+      step: 1,
+      defaultValue: 20,
+    },
+    {
+      key: "long_window",
+      label: "Long SMA window",
+      min: 20,
+      max: 200,
+      step: 5,
+      defaultValue: 50,
+    },
+  ],
+  ema_crossover: [
+    {
+      key: "fast_ema",
+      label: "Fast EMA period",
+      min: 5,
+      max: 50,
+      step: 1,
+      defaultValue: 12,
+    },
+    {
+      key: "slow_ema",
+      label: "Slow EMA period",
+      min: 20,
+      max: 200,
+      step: 5,
+      defaultValue: 26,
+    },
+  ],
+  donchian_breakout: [
+    {
+      key: "channel_period",
+      label: "Channel period",
+      min: 10,
+      max: 200,
+      step: 5,
+      defaultValue: 55,
+    },
+  ],
+  rsi_reversion: [
+    {
+      key: "rsi_period",
+      label: "RSI period",
+      min: 5,
+      max: 50,
+      step: 1,
+      defaultValue: 14,
+    },
+    {
+      key: "oversold",
+      label: "Oversold threshold",
+      min: 5,
+      max: 40,
+      step: 1,
+      defaultValue: 30,
+    },
+    {
+      key: "overbought",
+      label: "Overbought threshold",
+      min: 60,
+      max: 95,
+      step: 1,
+      defaultValue: 70,
+    },
+  ],
+  buy_and_hold: [],
+}
 
 const AlgorithmSelector: React.FC<AlgorithmSelectorProps> = (props) => {
-  const [searchQuery, setSearchQuery] = useState("")
-  const [showSuggestions, setShowSuggestions] = useState(false)
-  const [selectValue, setSelectValue] = useState("")
+  const isMulti = props.multiMode === true
 
-  const filteredAlgorithms = useMemo(() => {
-    if (!searchQuery) return algorithms
-    return algorithms.filter((algo) =>
-      algo.name.toLowerCase().includes(searchQuery.toLowerCase())
+  const [query, setQuery] = useState("")
+  const [open, setOpen] = useState(false)
+
+  const filteredAlgos = useMemo(() => {
+    const q = query.toLowerCase().trim()
+    if (!q) return ALGORITHMS
+    return ALGORITHMS.filter(
+      (a) =>
+        a.label.toLowerCase().includes(q) ||
+        a.id.toLowerCase().includes(q)
     )
-  }, [searchQuery])
+  }, [query])
 
-  // SINGLE MODE
-  if (!props.multiMode) {
-    const { algorithm, setAlgorithm, advancedMode, algorithmParams, setAlgorithmParams } =
-      props
+  const selectedIds: string[] = isMulti
+    ? (props as MultiModeProps).selectedAlgorithms
+    : (props as SingleModeProps).algorithm
+    ? [(props as SingleModeProps).algorithm]
+    : []
 
-    const selectedAlgo = algorithms.find((a) => a.id === algorithm)
+  const currentAlgoDef =
+    !isMulti && (props as SingleModeProps).algorithm
+      ? ALGORITHMS.find(
+          (a) => a.id === (props as SingleModeProps).algorithm
+        )
+      : undefined
 
-    const availableAlgorithms = filteredAlgorithms
+  const handleSelect = (algoId: string) => {
+    if (isMulti) {
+      const multi = props as MultiModeProps
+      if (multi.selectedAlgorithms.includes(algoId)) {
+        multi.setSelectedAlgorithms(
+          multi.selectedAlgorithms.filter((id) => id !== algoId)
+        )
+      } else {
+        multi.setSelectedAlgorithms([
+          ...multi.selectedAlgorithms,
+          algoId,
+        ])
+      }
+    } else {
+      const single = props as SingleModeProps
+      single.setAlgorithm(algoId)
+    }
 
-    const handleParamChange = (key: string, value: string) => {
-      setAlgorithmParams((prev) => ({
+    setQuery("")
+    setOpen(false)
+  }
+
+  // advanced params single-mode
+  const renderAdvancedParams = () => {
+    if (isMulti || !props.advancedMode) return null
+
+    const single = props as SingleModeProps
+    const defs = ALGO_PARAM_DEFS[single.algorithm] ?? []
+    if (!defs.length) return null
+
+    return (
+      <div className="mt-4 rounded-xl border border-white/10 bg-white/5 p-4 space-y-3">
+        <div className="flex items-center gap-2 text-xs font-semibold text-gray-300 uppercase tracking-wide">
+          <SlidersHorizontal className="w-4 h-4" />
+          <span>Advanced Parameters</span>
+        </div>
+        {defs.map((def) => {
+          const valueRaw = single.algorithmParams[def.key]
+          const value =
+            typeof valueRaw === "number"
+              ? valueRaw
+              : def.defaultValue
+          return (
+            <div key={def.key} className="flex flex-col gap-1">
+              <div className="flex justify-between text-xs text-gray-400">
+                <span>{def.label}</span>
+                <span>
+                  {value} ({def.min}–{def.max})
+                </span>
+              </div>
+              <input
+                type="range"
+                min={def.min}
+                max={def.max}
+                step={def.step}
+                value={value}
+                onChange={(e) => {
+                  const num = Number(e.target.value)
+                  single.setAlgorithmParams((prev) => ({
+                    ...prev,
+                    [def.key]: num,
+                  }))
+                }}
+                className="w-full accent-blue-400"
+              />
+            </div>
+          )
+        })}
+      </div>
+    )
+  }
+
+  // advanced params multi-mode
+  const renderMultiAdvancedParams = () => {
+    if (!isMulti || !props.advancedMode) return null
+
+    const multi = props as MultiModeProps
+    const selected = multi.selectedAlgorithms
+
+    const handleParamChange = (
+      algoId: string,
+      key: string,
+      value: number
+    ) => {
+      multi.setMultiAlgoParams((prev) => ({
         ...prev,
-        [key]: value === "" ? "" : value,
+        [algoId]: {
+          ...(prev[algoId] || {}),
+          [key]: value,
+        },
       }))
     }
 
-    const handleAlgoSelect = (algoId: string) => {
-      setAlgorithm(algoId)
-      setShowSuggestions(false)
-      setSearchQuery("")
-    }
-
     return (
-      <Card className="glass-card border-white/5">
-        <CardHeader className="border-b border-white/5 pb-4">
-          <CardTitle className="text-gray-100 flex items-center gap-2 text-base font-semibold">
-            <Bot className="w-4 h-4 text-gray-400" strokeWidth={2} />
-            Trading Algorithm
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-6">
-          <div className="space-y-4">
-            <div>
-              <Label className="text-gray-300 font-medium text-xs uppercase tracking-wider mb-3 block">
-                Select Algorithm
-              </Label>
-              <div className="relative">
-                <div className="relative mb-3">
-                  <Search
-                    className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500 z-10"
-                    strokeWidth={2}
-                  />
-                  <Input
-                    value={searchQuery}
-                    onChange={(e) => {
-                      setSearchQuery(e.target.value)
-                      setShowSuggestions(e.target.value.length > 0)
-                    }}
-                    onFocus={() => searchQuery && setShowSuggestions(true)}
-                    onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-                    placeholder="Search algorithms..."
-                    className="bg-white/5 border-white/10 text-gray-100 h-10 rounded-xl pl-10 hover:bg-white/10 transition-colors"
-                  />
+      <div className="mt-4 space-y-4">
+        <div className="flex items-center gap-2 text-xs font-semibold text-gray-300 uppercase tracking-wide">
+          <SlidersHorizontal className="w-4 h-4" />
+          <span>Algorithm Parameters</span>
+        </div>
+
+        {selected.length === 0 ? (
+          <p className="text-xs text-gray-500">
+            Select at least one algorithm to customize its parameters.
+          </p>
+        ) : (
+          selected.map((algoId) => {
+            const defs = ALGO_PARAM_DEFS[algoId] ?? []
+            if (!defs.length) return null
+
+            const algoDef = ALGORITHMS.find(
+              (a) => a.id === algoId
+            )
+
+            return (
+              <div
+                key={algoId}
+                className="rounded-xl border border-white/10 bg-white/5 p-3 space-y-3"
+              >
+                <div className="flex justify-between items-center text-xs font-semibold text-gray-200">
+                  <span>{algoDef?.label ?? algoId}</span>
+                  <span className="text-[10px] text-gray-400 uppercase tracking-wider">
+                    {algoId.replace(/_/g, " ")}
+                  </span>
                 </div>
 
-                {showSuggestions && availableAlgorithms.length > 0 && (
-                  <div className="absolute w-full glass-card border border-white/10 rounded-xl overflow-hidden z-20 shadow-lg mb-3">
-                    {availableAlgorithms.map((algo) => (
-                      <button
-                        key={algo.id}
-                        onClick={() => handleAlgoSelect(algo.id)}
-                        className="w-full text-left px-4 py-2.5 hover:bg-white/10 transition-colors"
-                      >
-                        <p className="text-gray-200 text-sm font-medium">{algo.name}</p>
-                        <p className="text-gray-500 text-xs">{algo.description}</p>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
+                {defs.map((def) => {
+                  const raw =
+                    multi.multiAlgoParams[algoId]?.[def.key]
+                  const value =
+                    typeof raw === "number"
+                      ? raw
+                      : def.defaultValue
 
-              <Select value={algorithm} onValueChange={setAlgorithm}>
-                <SelectTrigger className="bg-white/5 border-white/10 text-gray-100 h-11 rounded-xl hover:bg-white/10 transition-colors">
-                  <SelectValue placeholder="Select algorithm" />
-                </SelectTrigger>
-                <SelectContent className="glass-card border-white/10">
-                  {algorithms.map((algo) => (
-                    <SelectItem
-                      key={algo.id}
-                      value={algo.id}
-                      className="text-gray-200 hover:bg-white/10 focus:bg-white/10"
+                  return (
+                    <div
+                      key={def.key}
+                      className="flex flex-col gap-1"
                     >
-                      {algo.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {selectedAlgo && (
-              <div className="bg-white/5 p-4 rounded-xl border border-white/10">
-                <div className="flex items-start gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-white/15 flex items-center justify-center flex-shrink-0">
-                    <selectedAlgo.icon className="w-4 h-4 text-gray-200" strokeWidth={2} />
-                  </div>
-                  <div>
-                    <p className="font-semibold text-gray-100 text-sm mb-1">
-                      {selectedAlgo.name}
-                    </p>
-                    <p className="text-xs text-gray-400 leading-relaxed">
-                      {selectedAlgo.description}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {advancedMode && selectedAlgo && (
-              <div className="bg-white/5 border border-white/10 rounded-xl p-4">
-                <h4 className="text-xs font-semibold text-gray-300 mb-3 uppercase tracking-wider">
-                  Algorithm Parameters
-                </h4>
-                <div className="grid md:grid-cols-2 gap-3">
-                  {selectedAlgo.params.map((param) => (
-                    <div key={param.key}>
-                      <Label className="text-gray-400 text-xs font-medium mb-1.5 block">
-                        {param.label}
-                      </Label>
-                      <Input
-                        type="number"
-                        min={param.min}
-                        max={param.max}
-                        step={
-                          param.key.includes("threshold") || param.key.includes("std")
-                            ? 0.1
-                            : 1
+                      <div className="flex justify-between text-xs text-gray-400">
+                        <span>{def.label}</span>
+                        <span>
+                          {value} ({def.min}–{def.max})
+                        </span>
+                      </div>
+                      <input
+                        type="range"
+                        min={def.min}
+                        max={def.max}
+                        step={def.step}
+                        value={value}
+                        onChange={(e) =>
+                          handleParamChange(
+                            algoId,
+                            def.key,
+                            Number(e.target.value)
+                          )
                         }
-                        value={algorithmParams[param.key] ?? ""}
-                        onChange={(e) => handleParamChange(param.key, e.target.value)}
-                        placeholder={`Default: ${param.default}`}
-                        className="bg-white/5 border-white/10 text-gray-100 h-9 rounded-lg hover:bg-white/10 transition-colors text-sm"
+                        className="w-full accent-blue-400"
                       />
                     </div>
-                  ))}
-                </div>
-                <p className="text-xs text-gray-500 mt-3">
-                  Leave empty to use default values
-                </p>
+                  )
+                })}
               </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+            )
+          })
+        )}
+      </div>
     )
   }
 
-  // MULTI MODE
-  const {
-    selectedAlgorithms,
-    setSelectedAlgorithms,
-    advancedMode,
-    multiAlgoParams,
-    setMultiAlgoParams,
-  } = props as MultiModeProps
-
-  const availableAlgorithms = filteredAlgorithms.filter(
-    (a) => !selectedAlgorithms.includes(a.id)
-  )
-
-  const handleParamChangeMulti = (algoId: string, key: string, value: string) => {
-    setMultiAlgoParams((prev) => ({
-      ...prev,
-      [algoId]: {
-        ...(prev[algoId] || {}),
-        [key]: value === "" ? "" : value,
-      },
-    }))
-  }
-
-  const addAlgorithm = (algoId: string) => {
-    if (!selectedAlgorithms.includes(algoId)) {
-      setSelectedAlgorithms([...selectedAlgorithms, algoId])
-      setSelectValue("")
-      setSearchQuery("")
-    }
-  }
-
-  const removeAlgorithm = (algoId: string) => {
-    setSelectedAlgorithms(selectedAlgorithms.filter((a) => a !== algoId))
-    setMultiAlgoParams((prev) => {
-      const next = { ...prev }
-      delete next[algoId]
-      return next
-    })
-  }
-
-  const handleAlgoSelect = (algoId: string) => {
-    addAlgorithm(algoId)
-    setShowSuggestions(false)
-    setSearchQuery("")
-  }
+  const multiProps = props as MultiModeProps
 
   return (
-    <Card className="glass-card border-white/5">
-      <CardHeader className="border-b border-white/5 pb-4">
-        <CardTitle className="text-gray-100 flex items-center gap-2 text-base font-semibold">
-          <Bot className="w-4 h-4 text-gray-400" strokeWidth={2} />
-          Trading Algorithms
+    <Card className="relative h-full flex flex-col rounded-2xl border border-white/10 bg-white/[0.03]">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-sm font-semibold text-gray-100 flex items-center gap-2">
+          <Brain className="w-4 h-4" />
+          Trading Algorithm
         </CardTitle>
       </CardHeader>
-      <CardContent className="p-6">
-        <div className="space-y-4">
-          <div>
-            <Label className="text-gray-300 font-medium text-xs uppercase tracking-wider mb-3 block">
-              Add Algorithms
-            </Label>
-            <div className="relative">
-              <div className="relative mb-3">
-                <Search
-                  className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500 z-10"
-                  strokeWidth={2}
-                />
-                <Input
-                  value={searchQuery}
-                  onChange={(e) => {
-                    setSearchQuery(e.target.value)
-                    setShowSuggestions(e.target.value.length > 0)
-                  }}
-                  onFocus={() => searchQuery && setShowSuggestions(true)}
-                  onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-                  placeholder="Search algorithms..."
-                  className="bg-white/5 border-white/10 text-gray-100 h-10 rounded-xl pl-10 hover:bg-white/10 transition-colors"
-                />
-              </div>
+      <CardContent className="space-y-4 flex-1 flex flex-col">
+        <div>
+          <label className="block text-xs font-medium text-gray-400 mb-2">
+            {isMulti ? "Algorithms" : "Algorithm"}
+          </label>
+          <div className="relative">
+            <div className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
+              <Search className="w-4 h-4" />
+            </div>
+            <input
+              type="text"
+              className="w-full bg-white/5 border border-white/10 text-gray-100 h-11 rounded-xl pl-9 pr-10 text-sm placeholder-gray-500 hover:bg-white/10 transition-colors focus:outline-none"
+              placeholder={
+                isMulti
+                  ? "Search & select algorithms..."
+                  : "Search algorithm (e.g. SMA, RSI)..."
+              }
+              value={query}
+              onChange={(e) => {
+                setQuery(e.target.value)
+                setOpen(true)
+              }}
+              onFocus={() => setOpen(true)}
+            />
+            <button
+              type="button"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-200"
+              onClick={() => setOpen((o) => !o)}
+            >
+              <ChevronDown
+                className={`w-4 h-4 transition-transform ${
+                  open ? "rotate-180" : ""
+                }`}
+              />
+            </button>
+          </div>
 
-              {showSuggestions && availableAlgorithms.length > 0 && (
-                <div className="absolute w-full glass-card border border-white/10 rounded-xl overflow-hidden z-20 shadow-lg mb-3">
-                  {availableAlgorithms.map((algo) => (
+          {open && (
+            <div className="mt-2 max-h-60 overflow-y-auto rounded-xl border border-white/10 bg-white/5 shadow-xl custom-scrollbar">
+              {filteredAlgos.length === 0 ? (
+                <div className="px-3 py-2 text-sm text-gray-400">
+                  No algorithms found
+                </div>
+              ) : (
+                filteredAlgos.map((algo) => {
+                  const selected = selectedIds.includes(algo.id)
+                  return (
                     <button
                       key={algo.id}
-                      onClick={() => handleAlgoSelect(algo.id)}
-                      className="w-full text-left px-4 py-2.5 hover:bg-white/10 transition-colors"
+                      type="button"
+                      onClick={() => handleSelect(algo.id)}
+                      className={`w-full flex items-center justify-between px-3 py-2 text-sm text-left transition-colors hover:bg-white/10 ${
+                        selected
+                          ? "bg-white/10 text-gray-50"
+                          : "text-gray-100"
+                      }`}
                     >
-                      <p className="text-gray-200 text-sm font-medium">{algo.name}</p>
-                      <p className="text-gray-500 text-xs">{algo.description}</p>
+                      <span>{algo.label}</span>
+                      {selected && (
+                        <Check className="w-4 h-4 text-gray-100" />
+                      )}
                     </button>
-                  ))}
-                </div>
+                  )
+                })
               )}
             </div>
-
-            <Select
-              value={selectValue}
-              onValueChange={(value) => {
-                addAlgorithm(value)
-                setSelectValue("")
-              }}
-            >
-              <SelectTrigger className="bg-white/5 border-white/10 text-gray-100 h-11 rounded-xl hover:bg-white/10 transition-colors">
-                <SelectValue placeholder="Select algorithm to add" />
-              </SelectTrigger>
-              <SelectContent className="glass-card border-white/10">
-                {availableAlgorithms.map((algo) => (
-                  <SelectItem
-                    key={algo.id}
-                    value={algo.id}
-                    className="text-gray-200 hover:bg-white/10 focus:bg-white/10"
-                  >
-                    {algo.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-3">
-            {selectedAlgorithms.map((algoId) => {
-              const algo = algorithms.find((a) => a.id === algoId)
-              if (!algo) return null
-              const Icon = algo.icon
-
-              return (
-                <div key={algoId} className="bg-white/5 border border-white/10 rounded-xl p-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-lg bg-white/15 flex items-center justify-center">
-                        <Icon className="w-4 h-4 text-gray-200" strokeWidth={2} />
-                      </div>
-                      <div>
-                        <h4 className="font-semibold text-gray-100 text-sm">{algo.name}</h4>
-                        <p className="text-xs text-gray-500">{algo.description}</p>
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => removeAlgorithm(algoId)}
-                      className="text-gray-400 hover:text-red-400 transition-colors"
-                    >
-                      <X className="w-4 h-4" strokeWidth={2} />
-                    </button>
-                  </div>
-
-                  {advancedMode && (
-                    <div className="pt-3 border-t border-white/10">
-                      <h5 className="text-xs font-semibold text-gray-400 mb-3 uppercase tracking-wider">
-                        Parameters
-                      </h5>
-                      <div className="grid md:grid-cols-2 gap-3">
-                        {algo.params.map((param) => (
-                          <div key={param.key}>
-                            <Label className="text-gray-400 text-xs font-medium mb-1.5 block">
-                              {param.label}
-                            </Label>
-                            <Input
-                              type="number"
-                              min={param.min}
-                              max={param.max}
-                              step={
-                                param.key.includes("threshold") ||
-                                param.key.includes("std")
-                                  ? 0.1
-                                  : 1
-                              }
-                              value={multiAlgoParams[algoId]?.[param.key] ?? ""}
-                              onChange={(e) =>
-                                handleParamChangeMulti(algoId, param.key, e.target.value)
-                              }
-                              placeholder={`Default: ${param.default}`}
-                              className="bg-white/5 border-white/10 text-gray-100 h-9 rounded-lg hover:bg-white/10 transition-colors text-sm"
-                            />
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )
-            })}
-          </div>
-
-          {selectedAlgorithms.length === 0 && (
-            <div className="text-center py-8 text-gray-500 text-sm">
-              No algorithms selected. Add algorithms using the dropdown above.
-            </div>
           )}
+
+          {/* chips multi-modo con estilo neutro + X */}
+          {isMulti &&
+            multiProps.selectedAlgorithms.length > 0 && (
+              <div className="mt-3 flex flex-wrap gap-2">
+                {multiProps.selectedAlgorithms.map((id) => {
+                  const algo = ALGORITHMS.find(
+                    (a) => a.id === id
+                  )
+                  return (
+                    <button
+                      key={id}
+                      type="button"
+                      onClick={() => handleSelect(id)}
+                      className="inline-flex items-center gap-1 rounded-full bg-white/10 px-3 py-1 text-xs text-gray-100 border border-white/30 hover:bg-white/20"
+                    >
+                      <span>{algo?.label ?? id}</span>
+                      <span className="text-gray-300 text-sm">
+                        ×
+                      </span>
+                    </button>
+                  )
+                })}
+              </div>
+            )}
         </div>
+
+        {/* overview solo en single-mode */}
+        {!isMulti && currentAlgoDef && (
+          <div className="mt-4 rounded-xl border border-white/10 bg-white/5 p-4 space-y-2">
+            <h4 className="text-xs font-semibold text-gray-300 uppercase tracking-wide">
+              Algorithm overview
+            </h4>
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-100">
+                {currentAlgoDef.label}
+              </span>
+              <span className="text-xs text-gray-400 uppercase tracking-wider">
+                {currentAlgoDef.id.replace(/_/g, " ")}
+              </span>
+            </div>
+            <p className="text-xs text-gray-400">
+              {currentAlgoDef.description}
+            </p>
+          </div>
+        )}
+
+        {renderAdvancedParams()}
+        {renderMultiAdvancedParams()}
       </CardContent>
     </Card>
   )

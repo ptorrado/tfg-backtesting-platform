@@ -1,7 +1,8 @@
+// src/layout/Layout.tsx
 import React from "react"
 import { Link, useLocation } from "react-router-dom"
-import { createPageUrl } from "../../utils"
-import { BarChart3, History, Menu, PlayCircle, X } from "lucide-react"
+import { createPageUrl } from "../utils"
+import { History, PlayCircle, BarChart3, Menu, X } from "lucide-react"
 import {
   Sidebar,
   SidebarContent,
@@ -16,7 +17,10 @@ import {
   SidebarProvider,
   SidebarTrigger,
   useSidebar,
-} from "../ui/sidebar"
+} from "../components/ui/sidebar"
+
+const APP_NAME = "Backtest Lab"
+const APP_TAGLINE = "Educational Backtesting Sandbox"
 
 const navigationItems = [
   {
@@ -46,11 +50,12 @@ function SidebarCloseButton() {
   )
 }
 
-export default function Layout({
-  children,
-}: {
+interface LayoutProps {
   children: React.ReactNode
-}) {
+  currentPageName?: string
+}
+
+export default function Layout({ children }: LayoutProps) {
   const location = useLocation()
 
   return (
@@ -59,6 +64,13 @@ export default function Layout({
         :root {
           --primary: 0 0% 90%;
           --primary-foreground: 0 0% 10%;
+          --sidebar-background: 15 20 25;
+          --sidebar-foreground: 240 10% 80%;
+          --sidebar-primary: 240 10% 90%;
+          --sidebar-primary-foreground: 0 0% 10%;
+          --sidebar-accent: 240 5% 20%;
+          --sidebar-accent-foreground: 240 10% 90%;
+          --sidebar-border: 240 5% 20%;
         }
 
         body {
@@ -79,10 +91,18 @@ export default function Layout({
           -webkit-backdrop-filter: blur(20px);
           border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
         }
+
+        [data-sidebar="sidebar"] {
+          background: rgba(15, 20, 25, 0.98) !important;
+        }
+
+        [data-sidebar="sidebar"] * {
+          border-color: rgba(255, 255, 255, 0.08) !important;
+        }
       `}</style>
 
-      <div className="min-h-screen flex w-full bg-[#0f1419] text-white">
-        <Sidebar className="glass-sidebar border-r border-white/8">
+      <div className="min-h-screen flex w-full bg-[#0f1419]">
+        <Sidebar className="glass-sidebar border-r border-white/8 !bg-[#0f1419]">
           <SidebarCloseButton />
 
           <SidebarHeader className="border-b border-white/8 p-6">
@@ -91,8 +111,10 @@ export default function Layout({
                 <BarChart3 className="w-5 h-5 text-slate-100" strokeWidth={2} />
               </div>
               <div>
-                <h2 className="font-semibold text-gray-100 text-base">TradeSim</h2>
-                <p className="text-xs text-gray-500">Professional Platform</p>
+                <h2 className="font-semibold text-gray-100 text-base">
+                  {APP_NAME}
+                </h2>
+                <p className="text-xs text-gray-500">{APP_TAGLINE}</p>
               </div>
             </div>
           </SidebarHeader>
@@ -148,7 +170,7 @@ export default function Layout({
                 <Menu className="w-5 h-5" strokeWidth={2} />
               </SidebarTrigger>
               <h1 className="text-base font-semibold text-gray-100">
-                TradeSim Pro
+                {APP_NAME}
               </h1>
             </div>
           </header>

@@ -1,204 +1,278 @@
 import React, { useMemo, useState } from "react"
-import { TrendingUp, Bitcoin, Landmark, BarChart3, DollarSign, Search } from "lucide-react"
-
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card"
-import { Input } from "../ui/input"
+import { Card, CardHeader, CardTitle, CardContent } from "../ui/card"
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../ui/select"
+  Search,
+  TrendingUp,
+  Bitcoin,
+  BarChart3,
+  Landmark,
+  DollarSign,
+  ChevronDown,
+  Check,
+} from "lucide-react"
 
-export type AssetCategoryKey = "stocks" | "crypto" | "etf" | "commodities" | "index"
+export type AssetCategoryKey =
+  | "stocks"
+  | "crypto"
+  | "etf"
+  | "commodities"
+  | "index"
 
-interface AssetCategoryConfig {
-  icon: React.ComponentType<React.SVGProps<SVGSVGElement>>
+type AssetCategory = {
+  key: AssetCategoryKey
   label: string
+  icon: React.ElementType
   assets: string[]
 }
 
-const assetCategories: Record<AssetCategoryKey, AssetCategoryConfig> = {
-  stocks: {
-    icon: TrendingUp,
+const ASSET_CATEGORIES: AssetCategory[] = [
+  {
+    key: "stocks",
     label: "Stocks",
+    icon: TrendingUp,
     assets: ["AAPL", "GOOGL", "MSFT", "AMZN", "TSLA", "META", "NVDA", "JPM"],
   },
-  crypto: {
-    icon: Bitcoin,
+  {
+    key: "crypto",
     label: "Crypto",
-    assets: ["BTC/USD", "ETH/USD", "BNB/USD", "SOL/USD", "ADA/USD", "XRP/USD"],
+    icon: Bitcoin,
+    assets: ["BTC/USD", "ETH/USD", "SOL/USD", "XRP/USD", "ADA/USD", "DOGE/USD"],
   },
-  etf: {
-    icon: BarChart3,
+  {
+    key: "etf",
     label: "ETF",
-    assets: ["SPY", "QQQ", "IWM", "VTI", "VOO", "DIA", "EFA", "AGG"],
+    icon: BarChart3,
+    assets: ["SPY", "QQQ", "ARKK", "IWM", "EFA", "HYG", "XLK", "XLF"],
   },
-  commodities: {
-    icon: Landmark,
+  {
+    key: "commodities",
     label: "Commodities",
-    assets: ["Gold", "Silver", "Crude Oil", "Natural Gas", "Copper", "Platinum"],
+    icon: Landmark,
+    assets: [
+      "Gold",
+      "Silver",
+      "Crude Oil",
+      "Natural Gas",
+      "Copper",
+      "Corn",
+      "Wheat",
+      "Soybeans",
+    ],
   },
-  index: {
-    icon: DollarSign,
+  {
+    key: "index",
     label: "Index",
-    assets: ["S&P 500", "NASDAQ", "Dow Jones", "Russell 2000", "FTSE 100", "DAX"],
+    icon: DollarSign,
+    assets: [
+      "S&P 500",
+      "NASDAQ",
+      "Dow Jones",
+      "Russell 2000",
+      "FTSE 100",
+      "DAX",
+      "Nikkei 225",
+      "Euro Stoxx 50",
+    ],
   },
-}
+]
 
-export interface AssetSelectorProps {
+type AssetSelectorProps = {
   assetType: AssetCategoryKey
   setAssetType: (type: AssetCategoryKey) => void
   assetName: string
-  setAssetName: (name: string) => void
+  setAssetName: (asset: string) => void
 }
 
-export default function AssetSelector({
+type AssetResult = {
+  asset: string
+  category: AssetCategoryKey
+}
+
+const getCategoryLabel = (key: AssetCategoryKey) =>
+  ASSET_CATEGORIES.find((c) => c.key === key)?.label ?? key
+
+const findCategoryForAsset = (asset: string): AssetCategoryKey | undefined => {
+  for (const cat of ASSET_CATEGORIES) {
+    if (cat.assets.includes(asset)) return cat.key
+  }
+  return undefined
+}
+
+const AssetSelector: React.FC<AssetSelectorProps> = ({
   assetType,
   setAssetType,
   assetName,
   setAssetName,
-}: AssetSelectorProps) {
-  const [searchQuery, setSearchQuery] = useState("")
-  const [showSuggestions, setShowSuggestions] = useState(false)
+}) => {
+  const [query, setQuery] = useState("")
+  const [open, setOpen] = useState(false)
 
-  const currentCategory = assetCategories[assetType]
-  const Icon = currentCategory.icon
+  const currentCategory =
+    ASSET_CATEGORIES.find((c) => c.key === assetType) ?? ASSET_CATEGORIES[0]
 
-  const filteredAssets = useMemo<string[]>(() => {
-    const assets = currentCategory.assets
-    if (!searchQuery) return assets
-    return assets.filter((asset: string) =>
-      asset.toLowerCase().includes(searchQuery.toLowerCase())
-    )
-  }, [currentCategory, searchQuery])
+  const filteredAssets: AssetResult[] = useMemo(() => {
+    const q = query.toLowerCase().trim()
+    if (!q) {
+      return currentCategory.assets.map((a) => ({
+        asset: a,
+        category: currentCategory.key,
+      }))
+    }
 
-  const handleCategoryChange = (newType: AssetCategoryKey) => {
-    setAssetType(newType)
-    setAssetName("")
-    setSearchQuery("")
-    setShowSuggestions(false)
-  }
+    const results: AssetResult[] = []
+    for (const cat of ASSET_CATEGORIES) {
+      for (const a of cat.assets) {
+        if (a.toLowerCase().includes(q)) {
+          results.push({ asset: a, category: cat.key })
+        }
+      }
+    }
+    return results
+  }, [currentCategory, query])
 
-  const handleAssetSelect = (asset: string) => {
+  const handleSelect = (asset: string, category: AssetCategoryKey) => {
+    setAssetType(category)
     setAssetName(asset)
-    setSearchQuery("")
-    setShowSuggestions(false)
+    setQuery("")
+    setOpen(false)
   }
+
+  const selectedCategory =
+    findCategoryForAsset(assetName) ?? currentCategory.key
 
   return (
-    <Card className="glass-card border-white/5">
-      <CardHeader className="border-b border-white/5 pb-4">
-        <CardTitle className="text-gray-100 flex items-center gap-2 text-base font-semibold">
-          <Icon className="w-4 h-4 text-gray-400" strokeWidth={2} />
+    <Card className="relative h-full flex flex-col rounded-2xl border border-white/10 bg-white/[0.03]">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-sm font-semibold text-gray-100 flex items-center gap-2">
+          <Landmark className="w-4 h-4" />
           Asset Selection
         </CardTitle>
       </CardHeader>
-      <CardContent className="p-6 space-y-5">
-        {/* CATEGORY */}
+
+      <CardContent className="space-y-4 flex-1 flex flex-col">
+        {/* CATEGORY TABS */}
         <div>
-          <label className="text-xs font-medium text-gray-400 mb-3 block uppercase tracking-wider">
-            Category
-          </label>
-          <div className="grid grid-cols-5 gap-2">
-            {(
-              Object.keys(assetCategories) as AssetCategoryKey[]
-            ).map((key) => {
-              const CategoryIcon = assetCategories[key].icon
-              const label = assetCategories[key].label
+          <p className="text-xs font-medium text-gray-400 mb-2">Category</p>
+          <div className="flex flex-wrap gap-3">
+            {ASSET_CATEGORIES.map((cat) => {
+              const Icon = cat.icon
+              const active = cat.key === assetType
+
               return (
                 <button
-                  key={key}
+                  key={cat.key}
                   type="button"
-                  onClick={() => handleCategoryChange(key)}
-                  className={`flex flex-col items-center gap-2 p-3 rounded-xl transition-all duration-200 border ${
-                    assetType === key
-                      ? "bg-white/15 text-white border-white/30"
-                      : "bg-white/5 text-gray-400 border-white/5 hover:bg-white/10 hover:border-white/10"
-                  }`}
+                  onClick={() => {
+                    setAssetType(cat.key)
+                    setAssetName("")
+                    setQuery("")
+                  }}
+                  className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-medium border transition-all
+                    ${
+                      active
+                        ? "bg-white/15 border-white/60 text-gray-100 shadow-sm"
+                        : "bg-white/[0.03] border-white/10 text-gray-300 hover:bg-white/10 hover:border-white/40 hover:text-gray-100"
+                    }`}
                 >
-                  <CategoryIcon className="w-4 h-4" strokeWidth={2} />
-                  <span className="text-xs font-medium">{label}</span>
+                  <Icon
+                    className={`w-4 h-4 ${
+                      active ? "text-gray-100" : "text-gray-400"
+                    }`}
+                  />
+                  <span className="sm:hidden">
+                    {cat.key === "commodities" ? "Cmdty" : cat.label}
+                  </span>
+                  <span className="hidden sm:inline">{cat.label}</span>
                 </button>
               )
             })}
           </div>
         </div>
 
-        {/* SEARCH + SELECT */}
+        {/* ASSET DROPDOWN */}
         <div>
-          <label className="text-xs font-medium text-gray-400 mb-3 block uppercase tracking-wider">
-            Asset
-          </label>
+          <p className="text-xs font-medium text-gray-400 mb-2">Asset</p>
           <div className="relative">
-            <div className="relative mb-3">
-              <Search
-                className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500 z-10"
-                strokeWidth={2}
-              />
-              <Input
-                value={searchQuery}
-                onChange={(e) => {
-                  setSearchQuery(e.target.value)
-                  setShowSuggestions(e.target.value.length > 0)
-                }}
-                onFocus={() => searchQuery && setShowSuggestions(true)}
-                onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-                placeholder="Search assets..."
-                className="bg-white/5 border-white/10 text-gray-100 h-10 rounded-xl pl-10 hover:bg-white/10 transition-colors"
-              />
+            <div className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
+              <Search className="w-4 h-4" />
             </div>
-
-            {showSuggestions && filteredAssets.length > 0 && (
-              <div className="absolute w-full glass-card border border-white/10 rounded-xl overflow-hidden z-20 shadow-lg">
-                {filteredAssets.map((asset: string) => (
-                  <button
-                    key={asset}
-                    type="button"
-                    onClick={() => handleAssetSelect(asset)}
-                    className="w-full text-left px-4 py-2.5 text-gray-200 hover:bg-white/10 transition-colors text-sm"
-                  >
-                    {asset}
-                  </button>
-                ))}
-              </div>
-            )}
+            <input
+              type="text"
+              className="w-full bg-white/5 border border-white/10 text-gray-100 h-11 rounded-xl pl-9 pr-10 text-sm placeholder-gray-500 hover:bg-white/10 transition-colors focus:outline-none"
+              placeholder="Search by symbol (e.g. AAPL, BTC/USD, Gold)..."
+              value={query}
+              onChange={(e) => {
+                setQuery(e.target.value)
+                setOpen(true)
+              }}
+              onFocus={() => setOpen(true)}
+            />
+            <button
+              type="button"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-200"
+              onClick={() => setOpen((o) => !o)}
+            >
+              <ChevronDown
+                className={`w-4 h-4 transition-transform ${
+                  open ? "rotate-180" : ""
+                }`}
+              />
+            </button>
           </div>
 
-          <Select value={assetName} onValueChange={setAssetName}>
-            <SelectTrigger className="bg-white/5 border-white/10 text-gray-100 h-11 rounded-xl hover:bg-white/10 transition-colors">
-              <SelectValue placeholder="Select asset" />
-            </SelectTrigger>
-            <SelectContent className="glass-card border-white/10">
-              {currentCategory.assets.map((asset: string) => (
-                <SelectItem
-                  key={asset}
-                  value={asset}
-                  className="text-gray-200 hover:bg-white/10 focus:bg-white/10"
-                >
-                  {asset}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          {open && (
+            <div className="mt-2 max-h-60 overflow-y-auto rounded-xl border border-white/10 bg-white/5 shadow-xl custom-scrollbar">
+              {filteredAssets.length === 0 ? (
+                <div className="px-3 py-2 text-sm text-gray-400">
+                  No assets found
+                </div>
+              ) : (
+                filteredAssets.map(({ asset, category }) => {
+                  const selected = assetName === asset
+                  return (
+                    <button
+                      key={`${category}-${asset}`}
+                      type="button"
+                      onClick={() => handleSelect(asset, category)}
+                      className={`w-full flex items-center justify-between px-3 py-2 text-sm text-left transition-colors
+                        hover:bg-white/10 ${
+                          selected ? "bg-white/10 text-gray-50" : "text-gray-100"
+                        }`}
+                    >
+                      <span>{asset}</span>
+                      <span className="flex items-center gap-2 text-xs text-gray-400">
+                        {getCategoryLabel(category)}
+                        {selected && <Check className="w-4 h-4 text-gray-100" />}
+                      </span>
+                    </button>
+                  )
+                })
+              )}
+            </div>
+          )}
         </div>
 
-        {/* SUMMARY */}
+        {/* OVERVIEW */}
         {assetName && (
-          <div className="bg-white/5 p-4 rounded-xl border border-white/10">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center border border-white/30">
-                <Icon className="w-5 h-5 text-gray-200" strokeWidth={2} />
-              </div>
-              <div>
-                <p className="text-gray-100 font-semibold">{assetName}</p>
-                <p className="text-gray-400 text-xs">{currentCategory.label}</p>
-              </div>
+          <div className="mt-4 rounded-xl border border-white/10 bg-white/5 p-4 space-y-2">
+            <h4 className="text-xs font-semibold text-gray-300 uppercase tracking-wide">
+              Asset overview
+            </h4>
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-100">{assetName}</span>
+              <span className="text-xs text-gray-400">
+                {getCategoryLabel(selectedCategory)}
+              </span>
             </div>
+            <p className="text-xs text-gray-400">
+              Synthetic historical data will be used to simulate this asset&apos;s
+              performance over the selected period.
+            </p>
           </div>
         )}
       </CardContent>
     </Card>
   )
 }
+
+export default AssetSelector
