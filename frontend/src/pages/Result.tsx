@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from "react"
-import { useNavigate } from "react-router-dom"
-import { motion } from "framer-motion"
+// src/pages/Result.tsx
+import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
 import {
   ArrowLeft,
   DollarSign,
@@ -9,116 +10,123 @@ import {
   Activity,
   BarChart3,
   Award,
-} from "lucide-react"
+} from "lucide-react";
 
-import { base44 } from "../api/base44Client"
-import { createPageUrl } from "../utils"
+import {
+  SimulationDetail,
+  EquityPoint as ApiEquityPoint,
+  getSimulation,
+} from "../api/simulations";
+import { createPageUrl } from "../utils";
 
-import { Button } from "../components/ui/button"
-import { Skeleton } from "../components/ui/skeleton"
+import { Button } from "../components/ui/button";
+import { Skeleton } from "../components/ui/skeleton";
 
-import MetricsCard from "../components/results/MetricsCard"
-import EquityCurveChart from "../components/results/EquityCurveChart"
-import TradesTable from "../components/results/TradesTable"
-import BenchmarkComparison from "../components/results/BenchmarkComparison"
-import BatchComparison from "../components/results/BatchComparison"
+import MetricsCard from "../components/results/MetricsCard";
+import EquityCurveChart from "../components/results/EquityCurveChart";
+import TradesTable from "../components/results/TradesTable";
+import BenchmarkComparison from "../components/results/BenchmarkComparison";
+
+// ===== Tipos internos =====
 
 interface EquityPoint {
-  date: string
-  value: number
-}
-
-interface BenchmarkPoint {
-  date: string
-  value: number
+  date: string;
+  value: number;
 }
 
 interface TradeRow {
-  date: string
-  type: "buy" | "sell" | string
-  price: number
-  quantity: number
-  profit_loss: number
+  date: string;
+  type: "buy" | "sell" | string;
+  price: number;
+  quantity: number;
+  profit_loss: number;
 }
 
-interface Simulation {
-  id: string
-  asset_type: string
-  asset_name: string
-  algorithm: string
-  start_date: string
-  end_date: string
-  initial_investment: number
-  final_value: number
-  profit_loss: number
-  profit_loss_percentage: number
-  number_of_trades: number
-  winning_trades: number
-  losing_trades: number
-  accuracy: number
-  max_drawdown: number
-  sharpe_ratio: number
-  equity_curve: EquityPoint[]
-  trades: TradeRow[]
-  benchmark_final_value: number
-  benchmark_profit_loss: number
-  benchmark_profit_loss_percentage: number
-  benchmark_equity_curve: BenchmarkPoint[]
-  efficiency_ratio: number
+// ===== Helpers métricas =====
 
-  // batch fields
-  is_batch?: boolean
-  batch_id?: string
-  batch_name?: string
-  created_date?: string
+function computeMaxDrawdown(curve: EquityPoint[]): number {
+  if (curve.length === 0) return 0;
+  let peak = curve[0].value;
+  let maxDd = 0;
+
+  for (const point of curve) {
+    if (point.value > peak) peak = point.value;
+    const dd = ((peak - point.value) / peak) * 100;
+    if (dd > maxDd) maxDd = dd;
+  }
+
+  return maxDd;
 }
+
+function computeSharpe(curve: EquityPoint[]): number {
+  if (curve.length < 2) return 0;
+
+  const returns: number[] = [];
+  for (let i = 1; i < curve.length; i++) {
+    const prev = curve[i - 1].value;
+    const curr = curve[i].value;
+    if (prev !== 0) {
+      returns.push((curr - prev) / prev);
+    }
+  }
+
+  if (returns.length === 0) return 0;
+
+  const avg = returns.reduce((acc, r) => acc + r, 0) / returns.length;
+
+  const variance =
+    returns.reduce((acc, r) => acc + Math.pow(r - avg, 2), 0) /
+    returns.length;
+
+  const stdDev = Math.sqrt(variance);
+  if (stdDev === 0) return 0;
+
+  return (avg / stdDev) * Math.sqrt(252); // 252 días de mercado
+}
+
+// ===== Componente principal =====
 
 export default function Result() {
-  const navigate = useNavigate()
-  const [simulation, setSimulation] = useState<Simulation | null>(null)
-  const [batchSimulations, setBatchSimulations] = useState<Simulation[] | null>(
-    null
-  )
-  const [loading, setLoading] = useState(true)
+  const navigate = useNavigate();
 
+  const [simulation, setSimulation] = useState<SimulationDetail | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Cargamos la simulación a partir del ?id= de la URL
   useEffect(() => {
-    const loadSimulation = async () => {
-      const urlParams = new URLSearchParams(window.location.search)
-      const id = urlParams.get("id")
-      const batchId = urlParams.get("batch_id")
-
+    const load = async () => {
       try {
-        if (batchId) {
-          // Batch simulations
-          const sims: Simulation[] = await base44.entities.Simulation.filter({
-            batch_id: batchId,
-          })
-          if (sims.length > 0) {
-            setBatchSimulations(sims)
-          }
-        } else if (id) {
-          // Single simulation
-          const sims: Simulation[] = await base44.entities.Simulation.filter({
-            id,
-          })
-          if (sims.length > 0) {
-            setSimulation(sims[0])
-          }
-        } else {
-          navigate(createPageUrl("Simulator"))
-          return
+        const params = new URLSearchParams(window.location.search);
+        const idParam = params.get("id");
+
+        if (!idParam) {
+          setError("Missing simulation id");
+          setLoading(false);
+          return;
         }
-      } catch (err) {
-        console.error("Error loading simulation", err)
+
+        const id = Number(idParam);
+        if (Number.isNaN(id)) {
+          setError("Invalid simulation id");
+          setLoading(false);
+          return;
+        }
+
+        const sim = await getSimulation(id);
+        setSimulation(sim);
+      } catch (e) {
+        console.error(e);
+        setError("Simulation not found");
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
+    };
 
-    loadSimulation()
-  }, [navigate])
+    load();
+  }, []);
 
-  // Loading state
+  // ---------- Loading ----------
   if (loading) {
     return (
       <div className="min-h-screen bg-[#0f1419] p-4 md:p-8">
@@ -131,66 +139,97 @@ export default function Result() {
           </div>
         </div>
       </div>
-    )
+    );
   }
 
-  // Nothing loaded
-  if (!simulation && !batchSimulations) {
+  // ---------- Error / nada ----------
+  if (!simulation || error) {
     return (
       <div className="min-h-screen bg-[#0f1419] p-8 flex items-center justify-center">
         <div className="text-center">
-          <p className="text-gray-400 mb-4">Simulation not found</p>
+          <p className="text-gray-400 mb-4">
+            Simulation not found. Run a new one from the simulator.
+          </p>
           <Button onClick={() => navigate(createPageUrl("Simulator"))}>
-            Go Back
+            Go to Simulator
           </Button>
         </div>
       </div>
-    )
+    );
   }
 
-  // ---------- BATCH SIMULATION VIEW ----------
-  if (batchSimulations) {
-    return (
-      <div className="min-h-screen bg-[#0f1419] p-4 md:p-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="mb-8">
-            <Button
-              variant="ghost"
-              onClick={() => navigate(createPageUrl("Simulator"))}
-              className="mb-3 text-gray-400 hover:text-gray-200 hover:bg-white/5"
-            >
-              <ArrowLeft className="w-4 h-4 mr-2" strokeWidth={2} />
-              New Simulation
-            </Button>
-            <h1 className="text-3xl font-bold text-gray-100 mb-1">
-              Multi-Simulation Results
-            </h1>
-            <p className="text-gray-400 text-sm">
-              {batchSimulations[0].batch_name}
-            </p>
-          </div>
+  // ---------- Datos derivados ----------
+  const sim = simulation;
 
-          <BatchComparison
-            simulations={batchSimulations}
-            batchName={batchSimulations[0].batch_name ?? "Batch"}
-          />
-        </div>
-      </div>
-    )
+  const equityCurve: EquityPoint[] = sim.equity_curve.map(
+    (p: ApiEquityPoint) => ({
+      date: p.date,
+      value: p.equity,
+    })
+  );
+
+  if (equityCurve.length === 0) {
+    equityCurve.push({
+      date: sim.start_date,
+      value: sim.initial_capital,
+    });
   }
 
-  // ---------- SINGLE SIMULATION VIEW ----------
-  const sim = simulation as Simulation
-  const isProfit = sim.profit_loss >= 0
+  const initialCapital = sim.initial_capital;
+  const finalValue =
+    equityCurve[equityCurve.length - 1].value ?? initialCapital;
+
+  const profitLoss = finalValue - initialCapital;
+  const profitLossPct =
+    initialCapital !== 0 ? (profitLoss / initialCapital) * 100 : 0;
+
+  const isProfit = profitLoss >= 0;
+
+  // Métricas de trading desde el backend
+  const numberOfTrades = sim.number_of_trades ?? 0;
+  const winningTrades = sim.winning_trades ?? 0;
+  const losingTrades = sim.losing_trades ?? 0;
+  const accuracy = sim.accuracy ?? 0;
 
   const totalDays =
     Math.ceil(
       (new Date(sim.end_date).getTime() -
         new Date(sim.start_date).getTime()) /
         (1000 * 60 * 60 * 24)
-    ) || 1
-  const tradesPerWeek =
-    (sim.number_of_trades / totalDays) * 7
+    ) || 1;
+  const tradesPerWeek = totalDays > 0 ? (numberOfTrades / totalDays) * 7 : 0;
+
+  // Riesgo: usamos backend y, si falta, calculamos aquí
+  let maxDrawdownMetric: number;
+  if (typeof sim.max_drawdown === "number") {
+    maxDrawdownMetric =
+      Math.abs(sim.max_drawdown) <= 1
+        ? sim.max_drawdown * 100
+        : sim.max_drawdown;
+  } else {
+    maxDrawdownMetric = computeMaxDrawdown(equityCurve);
+  }
+
+  const sharpeMetric =
+    typeof sim.sharpe_ratio === "number"
+      ? sim.sharpe_ratio
+      : computeSharpe(equityCurve);
+
+  // Benchmark ficticio == estrategia
+  const benchmarkEquityCurve = equityCurve;
+  const benchmarkProfitLoss = profitLoss;
+  const efficiencyRatio = 100;
+
+  // Adaptamos trades del backend al formato de la tabla
+  const trades: TradeRow[] = (sim.trades ?? []).map((t) => ({
+    date: t.date,
+    type: t.type,
+    price: t.price,
+    quantity: t.quantity,
+    profit_loss: t.profit_loss,
+  }));
+
+  // ======================= Render =======================
 
   return (
     <div className="min-h-screen bg-[#0f1419] p-4 md:p-8">
@@ -210,7 +249,7 @@ export default function Result() {
               Simulation Results
             </h1>
             <p className="text-gray-400 text-sm">
-              {sim.asset_name} • {sim.algorithm.replace(/_/g, " ")}
+              {sim.asset} • {sim.algorithm.replace(/_/g, " ")}
             </p>
           </div>
         </div>
@@ -225,9 +264,9 @@ export default function Result() {
             <MetricsCard
               title="Total Profit/Loss"
               value={`${isProfit ? "+" : ""}$${Math.abs(
-                sim.profit_loss
+                profitLoss
               ).toFixed(2)}`}
-              subtitle={`${isProfit ? "+" : ""}${sim.profit_loss_percentage.toFixed(
+              subtitle={`${isProfit ? "+" : ""}${profitLossPct.toFixed(
                 2
               )}%`}
               icon={DollarSign}
@@ -242,8 +281,8 @@ export default function Result() {
           >
             <MetricsCard
               title="Final Value"
-              value={`$${sim.final_value.toFixed(2)}`}
-              subtitle={`From $${sim.initial_investment}`}
+              value={`$${finalValue.toFixed(2)}`}
+              subtitle={`From $${initialCapital}`}
               icon={TrendingUp}
               isPositive={isProfit}
             />
@@ -256,8 +295,8 @@ export default function Result() {
           >
             <MetricsCard
               title="Win Rate"
-              value={sim.accuracy}
-              subtitle={`${sim.winning_trades} wins / ${sim.losing_trades} losses`}
+              value={accuracy}
+              subtitle={`${winningTrades} wins / ${losingTrades} losses`}
               icon={Target}
               isPercentage
             />
@@ -270,7 +309,7 @@ export default function Result() {
           >
             <MetricsCard
               title="Total Trades"
-              value={sim.number_of_trades}
+              value={numberOfTrades}
               subtitle={`${tradesPerWeek.toFixed(1)} trades/week`}
               icon={Activity}
             />
@@ -285,11 +324,11 @@ export default function Result() {
           className="mb-8"
         >
           <BenchmarkComparison
-            equityCurve={sim.equity_curve}
-            benchmarkEquityCurve={sim.benchmark_equity_curve}
-            profitLoss={sim.profit_loss}
-            benchmarkProfitLoss={sim.benchmark_profit_loss}
-            efficiencyRatio={sim.efficiency_ratio}
+            equityCurve={equityCurve}
+            benchmarkEquityCurve={benchmarkEquityCurve}
+            profitLoss={profitLoss}
+            benchmarkProfitLoss={benchmarkProfitLoss}
+            efficiencyRatio={efficiencyRatio}
           />
         </motion.div>
 
@@ -301,7 +340,7 @@ export default function Result() {
             transition={{ delay: 0.6 }}
             className="lg:col-span-2"
           >
-            <EquityCurveChart data={sim.equity_curve} />
+            <EquityCurveChart data={equityCurve} />
           </motion.div>
 
           <motion.div
@@ -312,14 +351,14 @@ export default function Result() {
           >
             <MetricsCard
               title="Sharpe Ratio"
-              value={sim.sharpe_ratio.toFixed(2)}
+              value={sharpeMetric.toFixed(2)}
               subtitle="Risk-adjusted return"
               icon={Award}
-              isPositive={sim.sharpe_ratio > 1}
+              isPositive={sharpeMetric > 1}
             />
             <MetricsCard
               title="Max Drawdown"
-              value={sim.max_drawdown}
+              value={maxDrawdownMetric}
               subtitle="Largest peak-to-trough decline"
               icon={BarChart3}
               isPositive={false}
@@ -334,9 +373,9 @@ export default function Result() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.8 }}
         >
-          <TradesTable trades={sim.trades} />
+          <TradesTable trades={trades} />
         </motion.div>
       </div>
     </div>
-  )
+  );
 }

@@ -1,5 +1,6 @@
-import React, { useMemo, useState } from "react"
-import { Card, CardHeader, CardTitle, CardContent } from "../ui/card"
+// src/components/simulator/AssetSelector.tsx
+import React, { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
   Search,
   TrendingUp,
@@ -9,93 +10,56 @@ import {
   DollarSign,
   ChevronDown,
   Check,
-} from "lucide-react"
+} from "lucide-react";
+
+import { Card, CardHeader, CardTitle, CardContent } from "../ui/card";
+import { Asset, listAssets } from "../../api/assets";
 
 export type AssetCategoryKey =
   | "stocks"
   | "crypto"
   | "etf"
   | "commodities"
-  | "index"
+  | "index";
 
 type AssetCategory = {
-  key: AssetCategoryKey
-  label: string
-  icon: React.ElementType
-  assets: string[]
-}
+  key: AssetCategoryKey;
+  label: string;
+  icon: React.ElementType;
+};
 
 const ASSET_CATEGORIES: AssetCategory[] = [
-  {
-    key: "stocks",
-    label: "Stocks",
-    icon: TrendingUp,
-    assets: ["AAPL", "GOOGL", "MSFT", "AMZN", "TSLA", "META", "NVDA", "JPM"],
-  },
-  {
-    key: "crypto",
-    label: "Crypto",
-    icon: Bitcoin,
-    assets: ["BTC/USD", "ETH/USD", "SOL/USD", "XRP/USD", "ADA/USD", "DOGE/USD"],
-  },
-  {
-    key: "etf",
-    label: "ETF",
-    icon: BarChart3,
-    assets: ["SPY", "QQQ", "ARKK", "IWM", "EFA", "HYG", "XLK", "XLF"],
-  },
-  {
-    key: "commodities",
-    label: "Commodities",
-    icon: Landmark,
-    assets: [
-      "Gold",
-      "Silver",
-      "Crude Oil",
-      "Natural Gas",
-      "Copper",
-      "Corn",
-      "Wheat",
-      "Soybeans",
-    ],
-  },
-  {
-    key: "index",
-    label: "Index",
-    icon: DollarSign,
-    assets: [
-      "S&P 500",
-      "NASDAQ",
-      "Dow Jones",
-      "Russell 2000",
-      "FTSE 100",
-      "DAX",
-      "Nikkei 225",
-      "Euro Stoxx 50",
-    ],
-  },
-]
+  { key: "stocks", label: "Stocks", icon: TrendingUp },
+  { key: "crypto", label: "Crypto", icon: Bitcoin },
+  { key: "etf", label: "ETF", icon: BarChart3 },
+  { key: "commodities", label: "Commodities", icon: Landmark },
+  { key: "index", label: "Index", icon: DollarSign },
+];
 
 type AssetSelectorProps = {
-  assetType: AssetCategoryKey
-  setAssetType: (type: AssetCategoryKey) => void
-  assetName: string
-  setAssetName: (asset: string) => void
-}
+  assetType: AssetCategoryKey;
+  setAssetType: (type: AssetCategoryKey) => void;
+  assetName: string;
+  setAssetName: (asset: string) => void;
+};
 
 type AssetResult = {
-  asset: string
-  category: AssetCategoryKey
-}
+  asset: Asset;
+  category: AssetCategoryKey;
+};
 
 const getCategoryLabel = (key: AssetCategoryKey) =>
-  ASSET_CATEGORIES.find((c) => c.key === key)?.label ?? key
+  ASSET_CATEGORIES.find((c) => c.key === key)?.label ?? key;
 
-const findCategoryForAsset = (asset: string): AssetCategoryKey | undefined => {
-  for (const cat of ASSET_CATEGORIES) {
-    if (cat.assets.includes(asset)) return cat.key
-  }
-  return undefined
+// Mapeo sencillo de asset_type (DB) -> categoría del selector
+function mapAssetTypeToCategory(assetType: string): AssetCategoryKey | null {
+  const t = assetType.toLowerCase();
+  if (t === "stock" || t === "stocks") return "stocks";
+  if (t === "crypto" || t === "cryptocurrency") return "crypto";
+  if (t === "etf" || t === "fund") return "etf";
+  if (t === "commodity" || t === "commodities") return "commodities";
+  if (t === "index" || t === "indices") return "index";
+  return null;
 }
 
 const AssetSelector: React.FC<AssetSelectorProps> = ({
@@ -104,41 +68,70 @@ const AssetSelector: React.FC<AssetSelectorProps> = ({
   assetName,
   setAssetName,
 }) => {
-  const [query, setQuery] = useState("")
-  const [open, setOpen] = useState(false)
+  const [query, setQuery] = useState("");
+  const [open, setOpen] = useState(false);
+
+  // Cargamos assets desde la API
+  const {
+    data: assets = [],
+    isLoading,
+    isError,
+  } = useQuery<Asset[]>({
+    queryKey: ["assets"],
+    queryFn: listAssets,
+  });
 
   const currentCategory =
-    ASSET_CATEGORIES.find((c) => c.key === assetType) ?? ASSET_CATEGORIES[0]
+    ASSET_CATEGORIES.find((c) => c.key === assetType) ?? ASSET_CATEGORIES[0];
 
+  // Filtrado por categoría + búsqueda
   const filteredAssets: AssetResult[] = useMemo(() => {
-    const q = query.toLowerCase().trim()
+    if (isLoading || isError) return [];
+
+    // 1) Filtramos por categoría activa
+    const byCategory = assets.filter((a) => {
+      const cat = mapAssetTypeToCategory(a.asset_type);
+      return cat === currentCategory.key;
+    });
+
+    // 2) Si no hay query, devolvemos todos los de la categoría
+    const q = query.toLowerCase().trim();
     if (!q) {
-      return currentCategory.assets.map((a) => ({
+      return byCategory.map((a) => ({
         asset: a,
         category: currentCategory.key,
-      }))
+      }));
     }
 
-    const results: AssetResult[] = []
-    for (const cat of ASSET_CATEGORIES) {
-      for (const a of cat.assets) {
-        if (a.toLowerCase().includes(q)) {
-          results.push({ asset: a, category: cat.key })
-        }
+    // 3) Si hay query, buscamos en symbol + name en TODAS las categorías
+    const results: AssetResult[] = [];
+    for (const a of assets) {
+      const cat = mapAssetTypeToCategory(a.asset_type);
+      if (!cat) continue;
+
+      const text = `${a.symbol} ${a.name}`.toLowerCase();
+      if (text.includes(q)) {
+        results.push({ asset: a, category: cat });
       }
     }
-    return results
-  }, [currentCategory, query])
+    return results;
+  }, [assets, currentCategory.key, query, isLoading, isError]);
 
-  const handleSelect = (asset: string, category: AssetCategoryKey) => {
-    setAssetType(category)
-    setAssetName(asset)
-    setQuery("")
-    setOpen(false)
-  }
+  const handleSelect = (asset: Asset, category: AssetCategoryKey) => {
+    setAssetType(category);
+    setAssetName(asset.symbol);
+    setQuery("");
+    setOpen(false);
+  };
 
+  // Encontrar categoría del asset seleccionado (para el overview)
+  const selectedAsset = useMemo(
+    () => assets.find((a) => a.symbol === assetName),
+    [assets, assetName]
+  );
   const selectedCategory =
-    findCategoryForAsset(assetName) ?? currentCategory.key
+    (selectedAsset && mapAssetTypeToCategory(selectedAsset.asset_type)) ||
+    currentCategory.key;
 
   return (
     <Card className="relative h-full flex flex-col rounded-2xl border border-white/10 bg-white/[0.03]">
@@ -155,17 +148,17 @@ const AssetSelector: React.FC<AssetSelectorProps> = ({
           <p className="text-xs font-medium text-gray-400 mb-2">Category</p>
           <div className="flex flex-wrap gap-3">
             {ASSET_CATEGORIES.map((cat) => {
-              const Icon = cat.icon
-              const active = cat.key === assetType
+              const Icon = cat.icon;
+              const active = cat.key === assetType;
 
               return (
                 <button
                   key={cat.key}
                   type="button"
                   onClick={() => {
-                    setAssetType(cat.key)
-                    setAssetName("")
-                    setQuery("")
+                    setAssetType(cat.key);
+                    setAssetName("");
+                    setQuery("");
                   }}
                   className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-medium border transition-all
                     ${
@@ -184,7 +177,7 @@ const AssetSelector: React.FC<AssetSelectorProps> = ({
                   </span>
                   <span className="hidden sm:inline">{cat.label}</span>
                 </button>
-              )
+              );
             })}
           </div>
         </div>
@@ -199,11 +192,11 @@ const AssetSelector: React.FC<AssetSelectorProps> = ({
             <input
               type="text"
               className="w-full bg-white/5 border border-white/10 text-gray-100 h-11 rounded-xl pl-9 pr-10 text-sm placeholder-gray-500 hover:bg-white/10 transition-colors focus:outline-none"
-              placeholder="Search by symbol (e.g. AAPL, BTC/USD, Gold)..."
+              placeholder="Search by symbol (e.g. AAPL, BTC/USD, SPY)..."
               value={query}
               onChange={(e) => {
-                setQuery(e.target.value)
-                setOpen(true)
+                setQuery(e.target.value);
+                setOpen(true);
               }}
               onFocus={() => setOpen(true)}
             />
@@ -220,32 +213,50 @@ const AssetSelector: React.FC<AssetSelectorProps> = ({
             </button>
           </div>
 
+          {/* Lista de resultados */}
           {open && (
             <div className="mt-2 max-h-60 overflow-y-auto rounded-xl border border-white/10 bg-white/5 shadow-xl custom-scrollbar">
-              {filteredAssets.length === 0 ? (
+              {isLoading ? (
+                <div className="px-3 py-2 text-sm text-gray-400">
+                  Loading assets…
+                </div>
+              ) : isError ? (
+                <div className="px-3 py-2 text-sm text-red-400">
+                  Failed to load assets
+                </div>
+              ) : filteredAssets.length === 0 ? (
                 <div className="px-3 py-2 text-sm text-gray-400">
                   No assets found
                 </div>
               ) : (
                 filteredAssets.map(({ asset, category }) => {
-                  const selected = assetName === asset
+                  const selected = assetName === asset.symbol;
                   return (
                     <button
-                      key={`${category}-${asset}`}
+                      key={asset.id}
                       type="button"
                       onClick={() => handleSelect(asset, category)}
                       className={`w-full flex items-center justify-between px-3 py-2 text-sm text-left transition-colors
                         hover:bg-white/10 ${
-                          selected ? "bg-white/10 text-gray-50" : "text-gray-100"
+                          selected
+                            ? "bg-white/10 text-gray-50"
+                            : "text-gray-100"
                         }`}
                     >
-                      <span>{asset}</span>
+                      <span>
+                        {asset.symbol}
+                        <span className="ml-2 text-xs text-gray-400">
+                          {asset.name}
+                        </span>
+                      </span>
                       <span className="flex items-center gap-2 text-xs text-gray-400">
                         {getCategoryLabel(category)}
-                        {selected && <Check className="w-4 h-4 text-gray-100" />}
+                        {selected && (
+                          <Check className="w-4 h-4 text-gray-100" />
+                        )}
                       </span>
                     </button>
-                  )
+                  );
                 })
               )}
             </div>
@@ -253,13 +264,15 @@ const AssetSelector: React.FC<AssetSelectorProps> = ({
         </div>
 
         {/* OVERVIEW */}
-        {assetName && (
+        {assetName && selectedAsset && (
           <div className="mt-4 rounded-xl border border-white/10 bg-white/5 p-4 space-y-2">
             <h4 className="text-xs font-semibold text-gray-300 uppercase tracking-wide">
               Asset overview
             </h4>
             <div className="flex justify-between text-sm">
-              <span className="text-gray-100">{assetName}</span>
+              <span className="text-gray-100">
+                {selectedAsset.symbol} — {selectedAsset.name}
+              </span>
               <span className="text-xs text-gray-400">
                 {getCategoryLabel(selectedCategory)}
               </span>
@@ -272,7 +285,7 @@ const AssetSelector: React.FC<AssetSelectorProps> = ({
         )}
       </CardContent>
     </Card>
-  )
-}
+  );
+};
 
-export default AssetSelector
+export default AssetSelector;

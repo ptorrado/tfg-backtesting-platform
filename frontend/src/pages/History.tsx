@@ -1,147 +1,223 @@
-import React from "react"
-import { useNavigate } from "react-router-dom"
-import { useQuery } from "@tanstack/react-query"
-import { format } from "date-fns"
+// src/pages/History.tsx
+import React, { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { format } from "date-fns";
 import {
   History as HistoryIcon,
+  LayoutGrid,
+  List as ListIcon,
   TrendingUp,
   TrendingDown,
   Calendar,
   DollarSign,
   LineChart,
-  Bitcoin,
-  PieChart,
-  Gem,
-  BarChart,
-  Layers,
-} from "lucide-react"
+  X,
+} from "lucide-react";
 
-import { base44 } from "../api/base44Client"
-import { createPageUrl } from "../utils"
+import {
+  listSimulations,
+  deleteSimulation,
+  SimulationSummary,
+} from "../api/simulations";
+import { createPageUrl } from "../utils";
 
-import { Card, CardContent } from "../components/ui/card"
-import { Badge } from "../components/ui/badge"
-import { Skeleton } from "../components/ui/skeleton"
+import { Card, CardContent } from "../components/ui/card";
+import { Badge } from "../components/ui/badge";
+import { Skeleton } from "../components/ui/skeleton";
 
-interface EquityPoint {
-  date: string
-  value: number
-}
-
-interface Simulation {
-  id: string
-  asset_type: string
-  asset_name: string
-  algorithm: string
-  created_date: string
-  initial_investment: number
-  profit_loss: number
-  profit_loss_percentage: number
-  accuracy: number
-  equity_curve: EquityPoint[]
-
-  // batch fields
-  is_batch?: boolean
-  batch_id?: string
-  batch_name?: string
-}
-
-type GroupedItem =
-  | {
-      type: "batch"
-      batch_id: string
-      batch_name?: string
-      simulations: Simulation[]
-      created_date: string
-    }
-  | {
-      type: "single"
-      simulation: Simulation
-    }
+type Simulation = SimulationSummary;
+type ViewMode = "cards" | "list";
+type SortBy = "created_at" | "profit_loss";
+type SortDirection = "asc" | "desc";
 
 export default function History() {
-  const navigate = useNavigate()
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
-  const { data: simulations = [], isLoading } = useQuery<Simulation[]>({
+  const [viewMode, setViewMode] = useState<ViewMode>("cards");
+
+  const [assetFilter, setAssetFilter] = useState("");
+  const [sortBy, setSortBy] = useState<SortBy>("created_at");
+  const [sortDirection, setSortDirection] =
+    useState<SortDirection>("desc");
+
+  const {
+    data: simulations = [],
+    isLoading,
+    isError,
+  } = useQuery<Simulation[]>({
     queryKey: ["simulations"],
-    queryFn: () => base44.entities.Simulation.list("-created_date"),
-  })
+    queryFn: () => listSimulations(),
+  });
 
-  const groupedSimulations: GroupedItem[] = React.useMemo(() => {
-    const groups: GroupedItem[] = []
-    const seenBatches = new Set<string>()
+  const getAssetIcon = () => (
+    <LineChart className="w-6 h-6 text-gray-400" strokeWidth={1.5} />
+  );
 
-    simulations.forEach((sim) => {
-      if (sim.is_batch && sim.batch_id) {
-        if (!seenBatches.has(sim.batch_id)) {
-          seenBatches.add(sim.batch_id)
-          const batchSims = simulations.filter(
-            (s) => s.batch_id === sim.batch_id
-          )
-          groups.push({
-            type: "batch",
-            batch_id: sim.batch_id,
-            batch_name: sim.batch_name,
-            simulations: batchSims,
-            created_date: sim.created_date,
-          })
-        }
-      } else if (!sim.is_batch) {
-        groups.push({
-          type: "single",
-          simulation: sim,
-        })
+  const handleOpenSimulation = (id: number) => {
+    navigate(createPageUrl("Results") + `?id=${id}`);
+  };
+
+  const handleDeleteSimulation = async (
+    id: number,
+    asset: string
+  ) => {
+    const confirmed = window.confirm(
+      `Are you sure you want to delete this simulation for ${asset}? This action cannot be undone.`
+    );
+    if (!confirmed) return;
+
+    try {
+      await deleteSimulation(id);
+      await queryClient.invalidateQueries({ queryKey: ["simulations"] });
+    } catch (err) {
+      console.error("Failed to delete simulation", err);
+      alert("Error deleting simulation. Please try again.");
+    }
+  };
+
+  // Filtro + ordenación en front
+  const processedSimulations: Simulation[] = useMemo(() => {
+    const filtered = simulations.filter((s) => {
+      if (!assetFilter.trim()) return true;
+      return s.asset
+        .toLowerCase()
+        .includes(assetFilter.trim().toLowerCase());
+    });
+
+    const sorted = filtered.slice().sort((a, b) => {
+      if (sortBy === "created_at") {
+        const tA = new Date(a.created_at).getTime();
+        const tB = new Date(b.created_at).getTime();
+        return sortDirection === "desc" ? tB - tA : tA - tB;
+      } else {
+        const pA = a.profit_loss;
+        const pB = b.profit_loss;
+        return sortDirection === "desc" ? pB - pA : pA - pB;
       }
-    })
+    });
 
-    return groups
-  }, [simulations])
-
-  const getAssetIcon = (type: string) => {
-    const iconProps = {
-      className: "w-6 h-6 text-gray-400",
-      strokeWidth: 1.5,
-    }
-
-    switch (type) {
-      case "stocks":
-        return <LineChart {...iconProps} />
-      case "crypto":
-        return <Bitcoin {...iconProps} />
-      case "etf":
-        return <PieChart {...iconProps} />
-      case "commodities":
-        return <Gem {...iconProps} />
-      case "index":
-        return <BarChart {...iconProps} />
-      default:
-        return <LineChart {...iconProps} />
-    }
-  }
+    return sorted;
+  }, [simulations, assetFilter, sortBy, sortDirection]);
 
   return (
     <div className="min-h-screen bg-[#0f1419] p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-100 mb-2">
-            Simulation History
-          </h1>
-          <p className="text-gray-400 text-sm">
-            Review past backtesting results and performance metrics
-          </p>
+        {/* Header + toggle */}
+        <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-100 mb-2">
+              Simulation History
+            </h1>
+            <p className="text-gray-400 text-sm">
+              Review past backtesting results and performance metrics
+            </p>
+          </div>
+
+          {/* View toggle */}
+          <div className="inline-flex items-center glass-card rounded-full bg-[#111827]/95 p-1 shadow-lg shadow-black/40 border border-white/10">
+            <button
+              className={`flex items-center gap-2 px-4 py-1.5 text-sm font-medium rounded-full transition-colors ${
+                viewMode === "cards"
+                  ? "bg-white text-gray-900"
+                  : "text-gray-300 hover:text-white"
+              }`}
+              onClick={() => setViewMode("cards")}
+            >
+              <LayoutGrid
+                className={`w-4 h-4 ${
+                  viewMode === "cards" ? "text-gray-900" : "text-gray-400"
+                }`}
+                strokeWidth={1.8}
+              />
+              Cards
+            </button>
+            <button
+              className={`ml-1 flex items-center gap-2 px-4 py-1.5 text-sm font-medium rounded-full transition-colors ${
+                viewMode === "list"
+                  ? "bg-white text-gray-900"
+                  : "text-gray-300 hover:text-white"
+              }`}
+              onClick={() => setViewMode("list")}
+            >
+              <ListIcon
+                className={`w-4 h-4 ${
+                  viewMode === "list" ? "text-gray-900" : "text-gray-400"
+                }`}
+                strokeWidth={1.8}
+              />
+              List
+            </button>
+          </div>
         </div>
 
-        {/* Loading */}
+        {/* Filtros y orden */}
+        <div className="mb-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          {/* Filtro por asset */}
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-gray-400">Filter by asset:</span>
+            <input
+              type="text"
+              value={assetFilter}
+              onChange={(e) => setAssetFilter(e.target.value)}
+              placeholder="AAPL, BTCUSD, EURUSD..."
+              className="bg-[#020617]/80 border border-white/10 rounded-full px-3 py-1.5 text-xs text-gray-100 placeholder:text-gray-500 focus:outline-none focus:border-emerald-500/60"
+            />
+          </div>
+
+          {/* Orden */}
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-gray-400">Sort by:</span>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as SortBy)}
+              className="bg-[#020617]/80 border border-white/10 rounded-full px-3 py-1.5 text-xs text-gray-100 focus:outline-none focus:border-emerald-500/60"
+            >
+              <option value="created_at">Date</option>
+              <option value="profit_loss">P&amp;L</option>
+            </select>
+            <button
+              onClick={() =>
+                setSortDirection((prev) =>
+                  prev === "desc" ? "asc" : "desc"
+                )
+              }
+              className="flex items-center gap-1 bg-[#020617]/80 border border-white/10 rounded-full px-3 py-1.5 text-xs text-gray-100 hover:border-emerald-500/60 transition-colors"
+            >
+              {sortDirection === "desc" ? (
+                <>
+                  <TrendingDown className="w-3 h-3" strokeWidth={2} />
+                  <span>Desc</span>
+                </>
+              ) : (
+                <>
+                  <TrendingUp className="w-3 h-3" strokeWidth={2} />
+                  <span>Asc</span>
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+
+        {/* Loading / error / contenido */}
         {isLoading ? (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {Array.from({ length: 6 }).map((_, i) => (
-              <Skeleton key={i} className="h-56 bg-white/5 rounded-xl" />
+              <Skeleton key={i} className="h-56 bg-white/5 rounded-2xl" />
             ))}
           </div>
-        ) : groupedSimulations.length === 0 ? (
+        ) : isError ? (
+          <Card className="glass-card border-red-500/30 bg-red-500/5">
+            <CardContent className="p-6 text-center">
+              <p className="text-red-300 text-sm">
+                Error loading simulations. Please try again.
+              </p>
+            </CardContent>
+          </Card>
+        ) : processedSimulations.length === 0 ? (
           // Empty state
-          <Card className="glass-card border-white/5">
+          <Card className="glass-card border-white/5 bg-[#111827]/80">
             <CardContent className="p-12 text-center">
               <HistoryIcon
                 className="w-12 h-12 text-gray-600 mx-auto mb-4"
@@ -155,147 +231,50 @@ export default function History() {
               </p>
             </CardContent>
           </Card>
-        ) : (
-          // Content
+        ) : viewMode === "cards" ? (
+          // ==== Cards view ====
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {groupedSimulations.map((group) => {
-              if (group.type === "batch") {
-                const avgProfitLoss =
-                  group.simulations.reduce(
-                    (sum, s) => sum + s.profit_loss,
-                    0
-                  ) / group.simulations.length
-                const isProfit = avgProfitLoss >= 0
-                const avgAccuracy =
-                  group.simulations.reduce(
-                    (sum, s) => sum + s.accuracy,
-                    0
-                  ) / group.simulations.length
-
-                return (
-                  <Card
-                    key={`batch-${group.batch_id}`}
-                    className="glass-card border-white/5 hover:border-blue-500/30 transition-all duration-200 cursor-pointer group"
-                    onClick={() =>
-                      navigate(
-                        createPageUrl("Results") +
-                          `?batch_id=${group.batch_id}`
-                      )
-                    }
-                  >
-                    <div className="h-1 bg-gradient-to-r from-blue-500 to-purple-500" />
-                    <CardContent className="p-5">
-                      <div className="flex items-start justify-between mb-4">
-                        <div className="flex items-center gap-2">
-                          <div className="text-2xl">
-                            <Layers
-                              className="w-6 h-6 text-blue-400"
-                              strokeWidth={1.5}
-                            />
-                          </div>
-                          <div>
-                            <h3 className="font-semibold text-gray-100 group-hover:text-blue-400 transition-colors">
-                              {group.batch_name ?? "Batch Simulation"}
-                            </h3>
-                            <p className="text-xs text-gray-500">
-                              Multi-Simulation ({group.simulations.length} runs)
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="space-y-2 mb-4 text-sm">
-                        <div className="flex items-center justify-between">
-                          <span className="text-gray-400">Avg P&amp;L</span>
-                          <span
-                            className={`font-semibold ${
-                              isProfit
-                                ? "text-green-400"
-                                : "text-red-400"
-                            }`}
-                          >
-                            {isProfit ? (
-                              <TrendingUp
-                                className="w-3 h-3 inline mr-1"
-                                strokeWidth={2}
-                              />
-                            ) : (
-                              <TrendingDown
-                                className="w-3 h-3 inline mr-1"
-                                strokeWidth={2}
-                              />
-                            )}
-                            {isProfit ? "+" : "-"}$
-                            {Math.abs(avgProfitLoss).toFixed(2)}
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-gray-400">
-                            Avg Win Rate
-                          </span>
-                          <span className="text-gray-200 font-medium">
-                            {avgAccuracy.toFixed(1)}%
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="pt-3 border-t border-white/5 flex items-center justify-between text-xs text-gray-500">
-                        <div className="flex items-center gap-1">
-                          <Calendar
-                            className="w-3 h-3"
-                            strokeWidth={2}
-                          />
-                          {format(
-                            new Date(group.created_date),
-                            "MMM d, yyyy"
-                          )}
-                        </div>
-                        <Badge
-                          variant="outline"
-                          className="bg-blue-500/10 text-blue-400 border-blue-500/30"
-                        >
-                          Batch
-                        </Badge>
-                      </div>
-                    </CardContent>
-                  </Card>
-                )
-              }
-
-              // single simulation card
-              const simulation = group.simulation
-              const isProfit = simulation.profit_loss >= 0
+            {processedSimulations.map((simulation: Simulation) => {
+              const isProfit = simulation.profit_loss >= 0;
 
               return (
                 <Card
                   key={simulation.id}
-                  className="glass-card border-white/5 hover:border-white/10 transition-all duration-200 cursor-pointer group"
-                  onClick={() =>
-                    navigate(
-                      createPageUrl("Results") + `?id=${simulation.id}`
-                    )
-                  }
+                  className="glass-card border-white/5 bg-[#111827]/90 hover:border-white/10 transition-all duration-200 cursor-pointer group overflow-hidden rounded-2xl"
+                  onClick={() => handleOpenSimulation(simulation.id)}
                 >
                   <div
-                    className={`h-1 ${
-                      isProfit ? "bg-green-500" : "bg-red-500"
-                    }`}
+                    className={`h-[3px] ${
+                      isProfit ? "bg-emerald-500" : "bg-red-500"
+                    } rounded-t-2xl`}
                   />
                   <CardContent className="p-5">
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex items-center gap-2">
-                        <div className="text-2xl">
-                          {getAssetIcon(simulation.asset_type)}
-                        </div>
+                        <div>{getAssetIcon()}</div>
                         <div>
                           <h3 className="font-semibold text-gray-100 group-hover:text-emerald-400 transition-colors">
-                            {simulation.asset_name}
+                            {simulation.asset}
                           </h3>
                           <p className="text-xs text-gray-500">
                             {simulation.algorithm.replace(/_/g, " ")}
                           </p>
                         </div>
                       </div>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteSimulation(
+                            simulation.id,
+                            simulation.asset
+                          );
+                        }}
+                        className="text-gray-500 hover:text-red-400 transition-colors"
+                        aria-label="Delete simulation"
+                      >
+                        <X className="w-4 h-4" strokeWidth={2} />
+                      </button>
                     </div>
 
                     <div className="space-y-2 mb-4 text-sm">
@@ -318,11 +297,10 @@ export default function History() {
                             />
                           )}
                           {isProfit ? "+" : "-"}$
-                          {Math.abs(
-                            simulation.profit_loss
-                          ).toFixed(2)}
+                          {Math.abs(simulation.profit_loss).toFixed(2)}
                         </span>
                       </div>
+
                       <div className="flex items-center justify-between">
                         <span className="text-gray-400">Return</span>
                         <Badge
@@ -340,40 +318,96 @@ export default function History() {
                           %
                         </Badge>
                       </div>
+
                       <div className="flex items-center justify-between">
-                        <span className="text-gray-400">Win Rate</span>
-                        <span className="text-gray-200 font-medium">
-                          {simulation.accuracy.toFixed(1)}%
+                        <span className="text-gray-400">Period</span>
+                        <span className="text-xs text-gray-300">
+                          {format(
+                            new Date(simulation.start_date),
+                            "yyyy-MM-dd"
+                          )}{" "}
+                          –{" "}
+                          {format(
+                            new Date(simulation.end_date),
+                            "yyyy-MM-dd"
+                          )}
                         </span>
                       </div>
                     </div>
 
                     <div className="pt-3 border-t border-white/5 flex items-center justify-between text-xs text-gray-500">
                       <div className="flex items-center gap-1">
-                        <Calendar
-                          className="w-3 h-3"
-                          strokeWidth={2}
-                        />
+                        <Calendar className="w-3 h-3" strokeWidth={2} />
                         {format(
-                          new Date(simulation.created_date),
+                          new Date(simulation.created_at),
                           "MMM d, yyyy"
                         )}
                       </div>
                       <div className="flex items-center gap-1">
-                        <DollarSign
-                          className="w-3 h-3"
-                          strokeWidth={2}
-                        />
-                        ${simulation.initial_investment.toLocaleString()}
+                        <DollarSign className="w-3 h-3" strokeWidth={2} />
+                        ${simulation.initial_capital.toLocaleString()}
                       </div>
                     </div>
                   </CardContent>
                 </Card>
-              )
+              );
+            })}
+          </div>
+        ) : (
+          // ==== List view (compact) ====
+          <div className="overflow-hidden rounded-2xl border glass-card border-white/10 bg-[#111827]/90">
+            {/* Header row */}
+            <div className="grid grid-cols-5 px-4 py-2 text-xs font-semibold text-gray-300 border-b border-white/10 bg-black/20">
+              <span>Date</span>
+              <span className="col-span-2">Asset / Algo</span>
+              <span className="text-right">Initial</span>
+              <span className="text-right">P&amp;L</span>
+            </div>
+
+            {/* Rows */}
+            {processedSimulations.map((simulation: Simulation) => {
+              const isProfit = simulation.profit_loss >= 0;
+
+              return (
+                <button
+                  key={simulation.id}
+                  onClick={() => handleOpenSimulation(simulation.id)}
+                  className="w-full grid grid-cols-5 px-4 py-2 text-xs text-gray-200 hover:bg-white/5 transition"
+                >
+                  <span className="text-left">
+                    {format(
+                      new Date(simulation.created_at),
+                      "yyyy-MM-dd"
+                    )}
+                  </span>
+
+                  <span className="col-span-2 text-left">
+                    <span className="block font-medium text-gray-100">
+                      {simulation.asset}
+                    </span>
+                    <span className="block text-[11px] text-gray-500">
+                      {simulation.algorithm.replace(/_/g, " ")}
+                    </span>
+                  </span>
+
+                  <span className="text-right text-gray-200">
+                    ${simulation.initial_capital.toLocaleString()}
+                  </span>
+
+                  <span
+                    className={`text-right font-semibold ${
+                      isProfit ? "text-green-400" : "text-red-400"
+                    }`}
+                  >
+                    {isProfit ? "+" : "-"}$
+                    {Math.abs(simulation.profit_loss).toFixed(2)}
+                  </span>
+                </button>
+              );
             })}
           </div>
         )}
       </div>
     </div>
-  )
+  );
 }

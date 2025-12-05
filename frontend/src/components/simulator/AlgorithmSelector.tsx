@@ -1,220 +1,147 @@
-import React, { useMemo, useState } from "react"
-import { Card, CardHeader, CardTitle, CardContent } from "../ui/card"
+import React, { useEffect, useMemo, useState } from "react";
+import { Card, CardHeader, CardTitle, CardContent } from "../ui/card";
 import {
   Search,
   ChevronDown,
   Check,
   SlidersHorizontal,
   Brain,
-} from "lucide-react"
+} from "lucide-react";
 
-export type AlgoParams = Record<string, number | "">
-export type MultiAlgoParams = Record<string, AlgoParams>
+import {
+  listAlgorithms,
+  AlgorithmInfo,
+  AlgoParam,
+} from "../../api/algorithms";
+
+// ===== Tipos usados por el resto de la app (NO TOCAR) =====
+
+export type AlgoParams = Record<string, number | "">;
+export type MultiAlgoParams = Record<string, AlgoParams>;
 
 type BaseProps = {
-  advancedMode: boolean
-}
+  advancedMode: boolean;
+};
 
 type SingleModeProps = BaseProps & {
-  multiMode?: false
-  algorithm: string
-  setAlgorithm: (algo: string) => void
-  algorithmParams: AlgoParams
-  setAlgorithmParams: React.Dispatch<React.SetStateAction<AlgoParams>>
-}
+  multiMode?: false;
+  algorithm: string;
+  setAlgorithm: (algo: string) => void;
+  algorithmParams: AlgoParams;
+  setAlgorithmParams: React.Dispatch<React.SetStateAction<AlgoParams>>;
+};
 
 type MultiModeProps = BaseProps & {
-  multiMode: true
-  selectedAlgorithms: string[]
-  setSelectedAlgorithms: (algs: string[]) => void
-  multiAlgoParams: MultiAlgoParams
-  setMultiAlgoParams: React.Dispatch<React.SetStateAction<MultiAlgoParams>>
-}
+  multiMode: true;
+  selectedAlgorithms: string[];
+  setSelectedAlgorithms: (algs: string[]) => void;
+  multiAlgoParams: MultiAlgoParams;
+  setMultiAlgoParams: React.Dispatch<React.SetStateAction<MultiAlgoParams>>;
+};
 
-export type AlgorithmSelectorProps = SingleModeProps | MultiModeProps
+export type AlgorithmSelectorProps = SingleModeProps | MultiModeProps;
 
-type AlgorithmDef = {
-  id: string
-  label: string
-  description: string
-}
-
-const ALGORITHMS: AlgorithmDef[] = [
-  {
-    id: "sma_crossover",
-    label: "SMA Crossover",
-    description:
-      "Dual simple moving average strategy that goes long when the short SMA crosses above the long SMA.",
-  },
-  {
-    id: "ema_crossover",
-    label: "EMA Crossover",
-    description:
-      "Similar to SMA crossover but using exponential moving averages, reacting faster to recent price changes.",
-  },
-  {
-    id: "donchian_breakout",
-    label: "Donchian Breakout",
-    description:
-      "Trend-following strategy that buys on breakouts above a price channel and sells on breakdowns.",
-  },
-  {
-    id: "rsi_reversion",
-    label: "RSI Mean Reversion",
-    description:
-      "Mean-reversion approach based on the RSI indicator, buying oversold conditions and selling overbought ones.",
-  },
-  {
-    id: "buy_and_hold",
-    label: "Buy & Hold Baseline",
-    description:
-      "Simple benchmark: invest at the start date and hold the position until the end of the simulation.",
-  },
-]
-
-type ParamDef = {
-  key: string
-  label: string
-  min: number
-  max: number
-  step: number
-  defaultValue: number
-}
-
-const ALGO_PARAM_DEFS: Record<string, ParamDef[]> = {
-  sma_crossover: [
-    {
-      key: "short_window",
-      label: "Short SMA window",
-      min: 5,
-      max: 50,
-      step: 1,
-      defaultValue: 20,
-    },
-    {
-      key: "long_window",
-      label: "Long SMA window",
-      min: 20,
-      max: 200,
-      step: 5,
-      defaultValue: 50,
-    },
-  ],
-  ema_crossover: [
-    {
-      key: "fast_ema",
-      label: "Fast EMA period",
-      min: 5,
-      max: 50,
-      step: 1,
-      defaultValue: 12,
-    },
-    {
-      key: "slow_ema",
-      label: "Slow EMA period",
-      min: 20,
-      max: 200,
-      step: 5,
-      defaultValue: 26,
-    },
-  ],
-  donchian_breakout: [
-    {
-      key: "channel_period",
-      label: "Channel period",
-      min: 10,
-      max: 200,
-      step: 5,
-      defaultValue: 55,
-    },
-  ],
-  rsi_reversion: [
-    {
-      key: "rsi_period",
-      label: "RSI period",
-      min: 5,
-      max: 50,
-      step: 1,
-      defaultValue: 14,
-    },
-    {
-      key: "oversold",
-      label: "Oversold threshold",
-      min: 5,
-      max: 40,
-      step: 1,
-      defaultValue: 30,
-    },
-    {
-      key: "overbought",
-      label: "Overbought threshold",
-      min: 60,
-      max: 95,
-      step: 1,
-      defaultValue: 70,
-    },
-  ],
-  buy_and_hold: [],
-}
+// =========================================================
 
 const AlgorithmSelector: React.FC<AlgorithmSelectorProps> = (props) => {
-  const isMulti = props.multiMode === true
+  const isMulti = props.multiMode === true;
 
-  const [query, setQuery] = useState("")
-  const [open, setOpen] = useState(false)
+  const [algorithms, setAlgorithms] = useState<AlgorithmInfo[]>([]);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [query, setQuery] = useState("");
+  const [open, setOpen] = useState(false);
 
+  // ---- Cargar algoritmos desde el backend ----
+  useEffect(() => {
+    let mounted = true;
+
+    const load = async () => {
+      try {
+        setLoading(true);
+        const data = await listAlgorithms();
+        if (!mounted) return;
+        setAlgorithms(data);
+        // 👇 Importante: NO seleccionamos ningún algoritmo por defecto.
+        // El padre decide qué valor tiene `algorithm`.
+      } catch (err) {
+        console.error("Failed to load algorithms", err);
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    };
+
+    load();
+    return () => {
+      mounted = false;
+    };
+  }, []); // solo al montar
+
+  // ---- Búsqueda ----
   const filteredAlgos = useMemo(() => {
-    const q = query.toLowerCase().trim()
-    if (!q) return ALGORITHMS
-    return ALGORITHMS.filter(
+    const q = query.toLowerCase().trim();
+    if (!q) return algorithms;
+    return algorithms.filter(
       (a) =>
-        a.label.toLowerCase().includes(q) ||
-        a.id.toLowerCase().includes(q)
-    )
-  }, [query])
+        a.name.toLowerCase().includes(q) ||
+        a.id.toLowerCase().includes(q) ||
+        a.category.toLowerCase().includes(q)
+    );
+  }, [algorithms, query]);
 
+  // ---- IDs seleccionados (single o multi) ----
   const selectedIds: string[] = isMulti
     ? (props as MultiModeProps).selectedAlgorithms
     : (props as SingleModeProps).algorithm
     ? [(props as SingleModeProps).algorithm]
-    : []
+    : [];
 
-  const currentAlgoDef =
+  // ---- Definición del algoritmo actual (single-mode) ----
+  const currentAlgoDef: AlgorithmInfo | undefined =
     !isMulti && (props as SingleModeProps).algorithm
-      ? ALGORITHMS.find(
+      ? algorithms.find(
           (a) => a.id === (props as SingleModeProps).algorithm
         )
-      : undefined
+      : undefined;
 
+  // ---- Selección de algoritmo ----
   const handleSelect = (algoId: string) => {
     if (isMulti) {
-      const multi = props as MultiModeProps
+      const multi = props as MultiModeProps;
       if (multi.selectedAlgorithms.includes(algoId)) {
         multi.setSelectedAlgorithms(
           multi.selectedAlgorithms.filter((id) => id !== algoId)
-        )
+        );
       } else {
-        multi.setSelectedAlgorithms([
-          ...multi.selectedAlgorithms,
-          algoId,
-        ])
+        multi.setSelectedAlgorithms([...multi.selectedAlgorithms, algoId]);
       }
     } else {
-      const single = props as SingleModeProps
-      single.setAlgorithm(algoId)
+      const single = props as SingleModeProps;
+      single.setAlgorithm(algoId);
+
+      const algoDef = algorithms.find((a) => a.id === algoId);
+      if (algoDef) {
+        const defaults: AlgoParams = {};
+        algoDef.params.forEach((p) => {
+          defaults[p.name] = p.default;
+        });
+        single.setAlgorithmParams(defaults);
+      }
     }
 
-    setQuery("")
-    setOpen(false)
-  }
+    setQuery("");
+    setOpen(false);
+  };
 
-  // advanced params single-mode
+  // =========================================================
+  //      ADVANCED PARAMS – SINGLE MODE
+  // =========================================================
+
   const renderAdvancedParams = () => {
-    if (isMulti || !props.advancedMode) return null
+    if (isMulti || !props.advancedMode) return null;
 
-    const single = props as SingleModeProps
-    const defs = ALGO_PARAM_DEFS[single.algorithm] ?? []
-    if (!defs.length) return null
+    const single = props as SingleModeProps;
+    const algo = algorithms.find((a) => a.id === single.algorithm);
+    if (!algo || algo.params.length === 0) return null;
 
     return (
       <div className="mt-4 rounded-xl border border-white/10 bg-white/5 p-4 space-y-3">
@@ -222,14 +149,13 @@ const AlgorithmSelector: React.FC<AlgorithmSelectorProps> = (props) => {
           <SlidersHorizontal className="w-4 h-4" />
           <span>Advanced Parameters</span>
         </div>
-        {defs.map((def) => {
-          const valueRaw = single.algorithmParams[def.key]
+        {algo.params.map((def: AlgoParam) => {
+          const rawValue = single.algorithmParams[def.name];
           const value =
-            typeof valueRaw === "number"
-              ? valueRaw
-              : def.defaultValue
+            typeof rawValue === "number" ? rawValue : def.default;
+
           return (
-            <div key={def.key} className="flex flex-col gap-1">
+            <div key={def.name} className="flex flex-col gap-1">
               <div className="flex justify-between text-xs text-gray-400">
                 <span>{def.label}</span>
                 <span>
@@ -243,41 +169,51 @@ const AlgorithmSelector: React.FC<AlgorithmSelectorProps> = (props) => {
                 step={def.step}
                 value={value}
                 onChange={(e) => {
-                  const num = Number(e.target.value)
+                  const num = Number(e.target.value);
                   single.setAlgorithmParams((prev) => ({
                     ...prev,
-                    [def.key]: num,
-                  }))
+                    [def.name]:
+                      def.type === "int" ? Math.round(num) : num,
+                  }));
                 }}
                 className="w-full accent-blue-400"
               />
+              {def.description && (
+                <p className="text-[11px] text-gray-500">
+                  {def.description}
+                </p>
+              )}
             </div>
-          )
+          );
         })}
       </div>
-    )
-  }
+    );
+  };
 
-  // advanced params multi-mode
+  // =========================================================
+  //      ADVANCED PARAMS – MULTI MODE
+  // =========================================================
+
   const renderMultiAdvancedParams = () => {
-    if (!isMulti || !props.advancedMode) return null
+    if (!isMulti || !props.advancedMode) return null;
 
-    const multi = props as MultiModeProps
-    const selected = multi.selectedAlgorithms
+    const multi = props as MultiModeProps;
+    const selected = multi.selectedAlgorithms;
 
     const handleParamChange = (
       algoId: string,
-      key: string,
+      param: AlgoParam,
       value: number
     ) => {
+      const v = param.type === "int" ? Math.round(value) : value;
       multi.setMultiAlgoParams((prev) => ({
         ...prev,
         [algoId]: {
           ...(prev[algoId] || {}),
-          [key]: value,
+          [param.name]: v,
         },
-      }))
-    }
+      }));
+    };
 
     return (
       <div className="mt-4 space-y-4">
@@ -292,12 +228,8 @@ const AlgorithmSelector: React.FC<AlgorithmSelectorProps> = (props) => {
           </p>
         ) : (
           selected.map((algoId) => {
-            const defs = ALGO_PARAM_DEFS[algoId] ?? []
-            if (!defs.length) return null
-
-            const algoDef = ALGORITHMS.find(
-              (a) => a.id === algoId
-            )
+            const algo = algorithms.find((a) => a.id === algoId);
+            if (!algo || algo.params.length === 0) return null;
 
             return (
               <div
@@ -305,25 +237,20 @@ const AlgorithmSelector: React.FC<AlgorithmSelectorProps> = (props) => {
                 className="rounded-xl border border-white/10 bg-white/5 p-3 space-y-3"
               >
                 <div className="flex justify-between items-center text-xs font-semibold text-gray-200">
-                  <span>{algoDef?.label ?? algoId}</span>
+                  <span>{algo.name}</span>
                   <span className="text-[10px] text-gray-400 uppercase tracking-wider">
-                    {algoId.replace(/_/g, " ")}
+                    {algo.id.replace(/_/g, " ")}
                   </span>
                 </div>
 
-                {defs.map((def) => {
+                {algo.params.map((def) => {
                   const raw =
-                    multi.multiAlgoParams[algoId]?.[def.key]
+                    multi.multiAlgoParams[algoId]?.[def.name];
                   const value =
-                    typeof raw === "number"
-                      ? raw
-                      : def.defaultValue
+                    typeof raw === "number" ? raw : def.default;
 
                   return (
-                    <div
-                      key={def.key}
-                      className="flex flex-col gap-1"
-                    >
+                    <div key={def.name} className="flex flex-col gap-1">
                       <div className="flex justify-between text-xs text-gray-400">
                         <span>{def.label}</span>
                         <span>
@@ -339,24 +266,29 @@ const AlgorithmSelector: React.FC<AlgorithmSelectorProps> = (props) => {
                         onChange={(e) =>
                           handleParamChange(
                             algoId,
-                            def.key,
+                            def,
                             Number(e.target.value)
                           )
                         }
                         className="w-full accent-blue-400"
                       />
+                      {def.description && (
+                        <p className="text-[11px] text-gray-500">
+                          {def.description}
+                        </p>
+                      )}
                     </div>
-                  )
+                  );
                 })}
               </div>
-            )
+            );
           })
         )}
       </div>
-    )
-  }
+    );
+  };
 
-  const multiProps = props as MultiModeProps
+  const multiProps = props as MultiModeProps;
 
   return (
     <Card className="relative h-full flex flex-col rounded-2xl border border-white/10 bg-white/[0.03]">
@@ -385,8 +317,8 @@ const AlgorithmSelector: React.FC<AlgorithmSelectorProps> = (props) => {
               }
               value={query}
               onChange={(e) => {
-                setQuery(e.target.value)
-                setOpen(true)
+                setQuery(e.target.value);
+                setOpen(true);
               }}
               onFocus={() => setOpen(true)}
             />
@@ -405,59 +337,68 @@ const AlgorithmSelector: React.FC<AlgorithmSelectorProps> = (props) => {
 
           {open && (
             <div className="mt-2 max-h-60 overflow-y-auto rounded-xl border border-white/10 bg-white/5 shadow-xl custom-scrollbar">
-              {filteredAlgos.length === 0 ? (
+              {loading && (
+                <div className="px-3 py-2 text-sm text-gray-400">
+                  Loading algorithms...
+                </div>
+              )}
+              {!loading && filteredAlgos.length === 0 && (
                 <div className="px-3 py-2 text-sm text-gray-400">
                   No algorithms found
                 </div>
-              ) : (
+              )}
+              {!loading &&
                 filteredAlgos.map((algo) => {
-                  const selected = selectedIds.includes(algo.id)
+                  const selected = selectedIds.includes(algo.id);
                   return (
                     <button
                       key={algo.id}
                       type="button"
                       onClick={() => handleSelect(algo.id)}
-                      className={`w-full flex items-center justify-between px-3 py-2 text-sm text-left transition-colors hover:bg-white/10 ${
-                        selected
-                          ? "bg-white/10 text-gray-50"
-                          : "text-gray-100"
+                      className={`w-full flex flex-col items-start px-3 py-2 text-sm text-left transition-colors hover:bg-white/10 ${
+                        selected ? "bg-white/10 text-gray-50" : "text-gray-100"
                       }`}
                     >
-                      <span>{algo.label}</span>
+                      <div className="flex justify-between w-full">
+                        <span className="font-medium">{algo.name}</span>
+                        <span className="text-xs text-gray-400">
+                          {algo.category}
+                        </span>
+                      </div>
+                      <span className="text-[11px] text-gray-400">
+                        {algo.description}
+                      </span>
                       {selected && (
-                        <Check className="w-4 h-4 text-gray-100" />
+                        <div className="mt-1 text-xs text-emerald-400 flex items-center gap-1">
+                          <Check className="w-3 h-3" />
+                          Selected
+                        </div>
                       )}
                     </button>
-                  )
-                })
-              )}
+                  );
+                })}
             </div>
           )}
 
-          {/* chips multi-modo con estilo neutro + X */}
-          {isMulti &&
-            multiProps.selectedAlgorithms.length > 0 && (
-              <div className="mt-3 flex flex-wrap gap-2">
-                {multiProps.selectedAlgorithms.map((id) => {
-                  const algo = ALGORITHMS.find(
-                    (a) => a.id === id
-                  )
-                  return (
-                    <button
-                      key={id}
-                      type="button"
-                      onClick={() => handleSelect(id)}
-                      className="inline-flex items-center gap-1 rounded-full bg-white/10 px-3 py-1 text-xs text-gray-100 border border-white/30 hover:bg-white/20"
-                    >
-                      <span>{algo?.label ?? id}</span>
-                      <span className="text-gray-300 text-sm">
-                        ×
-                      </span>
-                    </button>
-                  )
-                })}
-              </div>
-            )}
+          {/* Chips multi-mode */}
+          {isMulti && multiProps.selectedAlgorithms.length > 0 && (
+            <div className="mt-3 flex flex-wrap gap-2">
+              {multiProps.selectedAlgorithms.map((id) => {
+                const algo = algorithms.find((a) => a.id === id);
+                return (
+                  <button
+                    key={id}
+                    type="button"
+                    onClick={() => handleSelect(id)}
+                    className="inline-flex items-center gap-1 rounded-full bg-white/10 px-3 py-1 text-xs text-gray-100 border border-white/30 hover:bg-white/20"
+                  >
+                    <span>{algo?.name ?? id}</span>
+                    <span className="text-gray-300 text-sm">×</span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         {/* overview solo en single-mode */}
@@ -468,7 +409,7 @@ const AlgorithmSelector: React.FC<AlgorithmSelectorProps> = (props) => {
             </h4>
             <div className="flex justify-between text-sm">
               <span className="text-gray-100">
-                {currentAlgoDef.label}
+                {currentAlgoDef.name}
               </span>
               <span className="text-xs text-gray-400 uppercase tracking-wider">
                 {currentAlgoDef.id.replace(/_/g, " ")}
@@ -484,7 +425,7 @@ const AlgorithmSelector: React.FC<AlgorithmSelectorProps> = (props) => {
         {renderMultiAdvancedParams()}
       </CardContent>
     </Card>
-  )
-}
+  );
+};
 
-export default AlgorithmSelector
+export default AlgorithmSelector;
