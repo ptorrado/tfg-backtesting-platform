@@ -1,10 +1,12 @@
-import React, { useMemo, useState } from "react"
+// frontend/src/components/simulator/BatchConfiguration.tsx
+
+import React, { useMemo, useState } from "react";
 import {
   Card,
   CardHeader,
   CardTitle,
   CardContent,
-} from "../ui/card"
+} from "../ui/card";
 import {
   Search,
   ChevronDown,
@@ -16,51 +18,45 @@ import {
   BarChart3,
   Landmark,
   DollarSign,
-} from "lucide-react"
+} from "lucide-react";
 import AlgorithmSelector, {
   AlgoParams,
   MultiAlgoParams,
-} from "./AlgorithmSelector"
-import { AssetCategoryKey } from "./AssetSelector"
+} from "./AlgorithmSelector";
+import { AssetCategoryKey } from "./AssetSelector";
 
-type BatchType = "assets" | "algorithms"
+import { useQuery } from "@tanstack/react-query";
+import { Asset, listAssets } from "../../api/assets";
+
+type BatchType = "assets" | "algorithms";
 
 export type BatchConfigurationProps = {
-  batchName: string
-  setBatchName: (name: string) => void
-  batchType: BatchType
-  setBatchType: (type: BatchType) => void
+  batchName: string;
+  setBatchName: (name: string) => void;
+  batchType: BatchType;
+  setBatchType: (type: BatchType) => void;
 
-  assetType: AssetCategoryKey
-  setAssetType: (type: AssetCategoryKey) => void
-  selectedAssets: string[]
-  setSelectedAssets: (assets: string[]) => void
+  assetType: AssetCategoryKey;
+  setAssetType: (type: AssetCategoryKey) => void;
+  selectedAssets: string[];
+  setSelectedAssets: (assets: string[]) => void;
 
-  selectedAlgorithms: string[]
-  setSelectedAlgorithms: (algs: string[]) => void
+  selectedAlgorithms: string[];
+  setSelectedAlgorithms: (algs: string[]) => void;
 
-  baseAsset: string
-  setBaseAsset: (asset: string) => void
-  baseAlgorithm: string
-  setBaseAlgorithm: (algo: string) => void
+  baseAsset: string;
+  setBaseAsset: (asset: string) => void;
+  baseAlgorithm: string;
+  setBaseAlgorithm: (algo: string) => void;
 
-  advancedMode: boolean
-  algorithmParams: AlgoParams
-  setAlgorithmParams: React.Dispatch<React.SetStateAction<AlgoParams>>
-  multiAlgoParams: MultiAlgoParams
+  advancedMode: boolean;
+  algorithmParams: AlgoParams;
+  setAlgorithmParams: React.Dispatch<React.SetStateAction<AlgoParams>>;
+  multiAlgoParams: MultiAlgoParams;
   setMultiAlgoParams: React.Dispatch<
     React.SetStateAction<MultiAlgoParams>
-  >
-}
-
-// mismo catálogo que en AssetSelector
-const CATEGORY_ASSETS: Record<AssetCategoryKey, string[]> = {
-  stocks: ["AAPL", "GOOGL", "MSFT", "AMZN", "TSLA", "META", "NVDA", "JPM"],
-  crypto: ["BTC/USD", "ETH/USD", "SOL/USD", "XRP/USD", "ADA/USD"],
-  etf: ["SPY", "QQQ", "ARKK", "IWM", "EFA", "HYG"],
-  commodities: ["Gold", "Silver", "Crude Oil", "Natural Gas", "Copper", "Corn", "Wheat"],
-  index: ["S&P 500", "NASDAQ", "Dow Jones", "Russell 2000", "FTSE 100", "DAX"],
-}
+  >;
+};
 
 const CATEGORY_LABELS: Record<AssetCategoryKey, string> = {
   stocks: "Stocks",
@@ -68,7 +64,7 @@ const CATEGORY_LABELS: Record<AssetCategoryKey, string> = {
   etf: "ETF",
   commodities: "Commodities",
   index: "Index",
-}
+};
 
 const CATEGORY_ICONS: Record<AssetCategoryKey, React.ElementType> = {
   stocks: TrendingUp,
@@ -76,22 +72,36 @@ const CATEGORY_ICONS: Record<AssetCategoryKey, React.ElementType> = {
   etf: BarChart3,
   commodities: Landmark,
   index: DollarSign,
-}
+};
+
+const CATEGORY_KEYS: AssetCategoryKey[] = [
+  "stocks",
+  "crypto",
+  "etf",
+  "commodities",
+  "index",
+];
 
 type AssetResult = {
-  asset: string
-  category: AssetCategoryKey
+  asset: Asset;
+  category: AssetCategoryKey;
+};
+
+function mapAssetTypeToCategory(
+  assetType: string
+): AssetCategoryKey | null {
+  const t = assetType.toLowerCase();
+  if (t === "stock" || t === "stocks") return "stocks";
+  if (t === "crypto" || t === "cryptocurrency") return "crypto";
+  if (t === "etf" || t === "fund") return "etf";
+  if (t === "commodity" || t === "commodities") return "commodities";
+  if (t === "index" || t === "indices") return "index";
+  return null;
 }
 
-const findCategoryForAsset = (asset: string): AssetCategoryKey | undefined => {
-  const keys = Object.keys(CATEGORY_ASSETS) as AssetCategoryKey[]
-  for (const k of keys) {
-    if (CATEGORY_ASSETS[k].includes(asset)) return k
-  }
-  return undefined
-}
-
-const BatchConfiguration: React.FC<BatchConfigurationProps> = (props) => {
+const BatchConfiguration: React.FC<BatchConfigurationProps> = (
+  props
+) => {
   const {
     batchName,
     setBatchName,
@@ -112,89 +122,117 @@ const BatchConfiguration: React.FC<BatchConfigurationProps> = (props) => {
     setAlgorithmParams,
     multiAlgoParams,
     setMultiAlgoParams,
-  } = props
+  } = props;
+
+  // ====== Assets reales desde la API ======
+  const {
+    data: assets = [],
+    isLoading,
+    isError,
+  } = useQuery<Asset[]>({
+    queryKey: ["assets"],
+    queryFn: listAssets,
+  });
 
   // búsqueda para selección múltiple de assets
-  const [assetQuery, setAssetQuery] = useState("")
-  const [assetDropdownOpen, setAssetDropdownOpen] = useState(false)
+  const [assetQuery, setAssetQuery] = useState("");
+  const [assetDropdownOpen, setAssetDropdownOpen] = useState(false);
 
   // búsqueda para base asset en multi-algorithms
-  const [baseAssetQuery, setBaseAssetQuery] = useState("")
+  const [baseAssetQuery, setBaseAssetQuery] = useState("");
   const [baseAssetDropdownOpen, setBaseAssetDropdownOpen] =
-    useState(false)
+    useState(false);
 
+  // ====== Filtrado multi-asset (assets a comparar) ======
   const currentAssets: AssetResult[] = useMemo(() => {
-    const q = assetQuery.toLowerCase().trim()
+    if (isLoading || isError) return [];
+
+    // 1) por categoría activa
+    const byCategory = assets.filter((a) => {
+      const cat = mapAssetTypeToCategory(a.asset_type);
+      return cat === assetType;
+    });
+
+    const q = assetQuery.toLowerCase().trim();
+
+    // sin query -> sólo categoría activa
     if (!q) {
-      return CATEGORY_ASSETS[assetType].map((a) => ({
+      return byCategory.map((a) => ({
         asset: a,
         category: assetType,
-      }))
+      }));
     }
-    const results: AssetResult[] = []
-    ;(Object.keys(CATEGORY_ASSETS) as AssetCategoryKey[]).forEach(
-      (cat) => {
-        CATEGORY_ASSETS[cat].forEach((a) => {
-          if (a.toLowerCase().includes(q)) {
-            results.push({ asset: a, category: cat })
-          }
-        })
-      }
-    )
-    return results
-  }, [assetType, assetQuery])
 
+    // con query -> buscamos en todas las categorías
+    const results: AssetResult[] = [];
+    for (const a of assets) {
+      const cat = mapAssetTypeToCategory(a.asset_type);
+      if (!cat) continue;
+      const text = `${a.symbol} ${a.name}`.toLowerCase();
+      if (text.includes(q)) {
+        results.push({ asset: a, category: cat });
+      }
+    }
+    return results;
+  }, [assets, isLoading, isError, assetType, assetQuery]);
+
+  // ====== Filtrado para base asset en multi-algorithms ======
   const baseAssetResults: AssetResult[] = useMemo(() => {
-    const q = baseAssetQuery.toLowerCase().trim()
+    if (isLoading || isError) return [];
+
+    const byCategory = assets.filter((a) => {
+      const cat = mapAssetTypeToCategory(a.asset_type);
+      return cat === assetType;
+    });
+
+    const q = baseAssetQuery.toLowerCase().trim();
+
     if (!q) {
-      return CATEGORY_ASSETS[assetType].map((a) => ({
+      return byCategory.map((a) => ({
         asset: a,
         category: assetType,
-      }))
+      }));
     }
-    const results: AssetResult[] = []
-    ;(Object.keys(CATEGORY_ASSETS) as AssetCategoryKey[]).forEach(
-      (cat) => {
-        CATEGORY_ASSETS[cat].forEach((a) => {
-          if (a.toLowerCase().includes(q)) {
-            results.push({ asset: a, category: cat })
-          }
-        })
-      }
-    )
-    return results
-  }, [assetType, baseAssetQuery])
 
-  const toggleSelectedAsset = (asset: string) => {
-    if (selectedAssets.includes(asset)) {
-      setSelectedAssets(selectedAssets.filter((a) => a !== asset))
-    } else {
-      setSelectedAssets([...selectedAssets, asset])
+    const results: AssetResult[] = [];
+    for (const a of assets) {
+      const cat = mapAssetTypeToCategory(a.asset_type);
+      if (!cat) continue;
+      const text = `${a.symbol} ${a.name}`.toLowerCase();
+      if (text.includes(q)) {
+        results.push({ asset: a, category: cat });
+      }
     }
-  }
+    return results;
+  }, [assets, isLoading, isError, assetType, baseAssetQuery]);
+
+  const toggleSelectedAsset = (symbol: string) => {
+    if (selectedAssets.includes(symbol)) {
+      setSelectedAssets(selectedAssets.filter((a) => a !== symbol));
+    } else {
+      setSelectedAssets([...selectedAssets, symbol]);
+    }
+  };
 
   const renderCategoryChips = (forBaseAsset = false) => (
-  <div className="flex flex-wrap gap-3">
-    {(Object.keys(CATEGORY_ASSETS) as AssetCategoryKey[]).map(
-      (key) => {
-        const active = key === assetType
-        const Icon = CATEGORY_ICONS[key]
+    <div className="flex flex-wrap gap-3">
+      {CATEGORY_KEYS.map((key) => {
+        const active = key === assetType;
+        const Icon = CATEGORY_ICONS[key];
 
         return (
           <button
             key={key}
             type="button"
             onClick={() => {
-              setAssetType(key)
+              setAssetType(key);
               if (forBaseAsset) {
-                // En modo multi-algo: solo reseteamos el asset base
-                setBaseAsset("")
-                setBaseAssetQuery("")
+                // Modo multi-algo: reseteamos sólo el asset base
+                setBaseAsset("");
+                setBaseAssetQuery("");
               } else {
-                // En modo multi-asset: cambiamos categoría y limpiamos la búsqueda,
-                // PERO MANTENEMOS LA LISTA DE ASSETS SELECCIONADOS
-                setAssetQuery("")
-                // ❌ antes: setSelectedAssets([])
+                // Modo multi-asset: cambiamos categoría y limpiamos búsqueda
+                setAssetQuery("");
               }
             }}
             className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-medium border transition-all
@@ -216,12 +254,10 @@ const BatchConfiguration: React.FC<BatchConfigurationProps> = (props) => {
               {CATEGORY_LABELS[key]}
             </span>
           </button>
-        )
-      }
-    )}
-  </div>
-)
-
+        );
+      })}
+    </div>
+  );
 
   // ----- MULTI-ASSET MODE -----
   const renderMultiAssetSection = () => (
@@ -256,17 +292,15 @@ const BatchConfiguration: React.FC<BatchConfigurationProps> = (props) => {
                 placeholder="Search & select multiple assets..."
                 value={assetQuery}
                 onChange={(e) => {
-                  setAssetQuery(e.target.value)
-                  setAssetDropdownOpen(true)
+                  setAssetQuery(e.target.value);
+                  setAssetDropdownOpen(true);
                 }}
                 onFocus={() => setAssetDropdownOpen(true)}
               />
               <button
                 type="button"
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-200"
-                onClick={() =>
-                  setAssetDropdownOpen((o) => !o)
-                }
+                onClick={() => setAssetDropdownOpen((o) => !o)}
               >
                 <ChevronDown
                   className={`w-4 h-4 transition-transform ${
@@ -278,20 +312,28 @@ const BatchConfiguration: React.FC<BatchConfigurationProps> = (props) => {
 
             {assetDropdownOpen && (
               <div className="mt-2 max-h-60 overflow-y-auto rounded-xl border border-white/10 bg-white/5 shadow-xl custom-scrollbar">
-                {currentAssets.length === 0 ? (
+                {isLoading ? (
+                  <div className="px-3 py-2 text-sm text-gray-400">
+                    Loading assets…
+                  </div>
+                ) : isError ? (
+                  <div className="px-3 py-2 text-sm text-red-400">
+                    Failed to load assets
+                  </div>
+                ) : currentAssets.length === 0 ? (
                   <div className="px-3 py-2 text-sm text-gray-400">
                     No assets found
                   </div>
                 ) : (
                   currentAssets.map(({ asset, category }) => {
-                    const active = selectedAssets.includes(asset)
+                    const active = selectedAssets.includes(asset.symbol);
                     return (
                       <button
-                        key={`${category}-${asset}`}
+                        key={asset.id}
                         type="button"
                         onClick={() => {
-                          toggleSelectedAsset(asset)
-                          setAssetDropdownOpen(false)
+                          toggleSelectedAsset(asset.symbol);
+                          setAssetDropdownOpen(false);
                         }}
                         className={`w-full flex items-center justify-between px-3 py-2 text-sm text-left transition-colors hover:bg-white/10 ${
                           active
@@ -299,7 +341,12 @@ const BatchConfiguration: React.FC<BatchConfigurationProps> = (props) => {
                             : "text-gray-100"
                         }`}
                       >
-                        <span>{asset}</span>
+                        <span>
+                          {asset.symbol}
+                          <span className="ml-2 text-xs text-gray-400">
+                            {asset.name}
+                          </span>
+                        </span>
                         <span className="flex items-center gap-2 text-xs text-gray-400">
                           {CATEGORY_LABELS[category]}
                           {active && (
@@ -307,7 +354,7 @@ const BatchConfiguration: React.FC<BatchConfigurationProps> = (props) => {
                           )}
                         </span>
                       </button>
-                    )
+                    );
                   })
                 )}
               </div>
@@ -315,14 +362,14 @@ const BatchConfiguration: React.FC<BatchConfigurationProps> = (props) => {
 
             {selectedAssets.length > 0 && (
               <div className="mt-3 flex flex-wrap gap-2">
-                {selectedAssets.map((asset) => (
+                {selectedAssets.map((symbol) => (
                   <button
-                    key={asset}
+                    key={symbol}
                     type="button"
-                    onClick={() => toggleSelectedAsset(asset)}
+                    onClick={() => toggleSelectedAsset(symbol)}
                     className="inline-flex items-center gap-1 rounded-full bg-white/10 px-3 py-1 text-xs text-gray-100 border border-white/30 hover:bg-white/20"
                   >
-                    <span>{asset}</span>
+                    <span>{symbol}</span>
                     <span className="text-gray-300 text-sm">×</span>
                   </button>
                 ))}
@@ -347,12 +394,18 @@ const BatchConfiguration: React.FC<BatchConfigurationProps> = (props) => {
         />
       </div>
     </div>
-  )
+  );
 
   // ----- MULTI-ALGO MODE -----
   const renderMultiAlgoSection = () => {
+    const baseAssetRow = assets.find((a) => a.symbol === baseAsset);
     const baseCategory =
-      findCategoryForAsset(baseAsset) ?? assetType
+      baseAssetRow &&
+      mapAssetTypeToCategory(baseAssetRow.asset_type || "")
+        ? (mapAssetTypeToCategory(
+            baseAssetRow.asset_type
+          ) as AssetCategoryKey)
+        : assetType;
 
     return (
       <div className="space-y-6">
@@ -386,8 +439,8 @@ const BatchConfiguration: React.FC<BatchConfigurationProps> = (props) => {
                   placeholder="Search base asset..."
                   value={baseAssetQuery}
                   onChange={(e) => {
-                    setBaseAssetQuery(e.target.value)
-                    setBaseAssetDropdownOpen(true)
+                    setBaseAssetQuery(e.target.value);
+                    setBaseAssetDropdownOpen(true);
                   }}
                   onFocus={() => setBaseAssetDropdownOpen(true)}
                 />
@@ -408,60 +461,71 @@ const BatchConfiguration: React.FC<BatchConfigurationProps> = (props) => {
 
               {baseAssetDropdownOpen && (
                 <div className="mt-2 max-h-60 overflow-y-auto rounded-xl border border-white/10 bg-white/5 shadow-xl custom-scrollbar">
-                  {baseAssetResults.length === 0 ? (
+                  {isLoading ? (
+                    <div className="px-3 py-2 text-sm text-gray-400">
+                      Loading assets…
+                    </div>
+                  ) : isError ? (
+                    <div className="px-3 py-2 text-sm text-red-400">
+                      Failed to load assets
+                    </div>
+                  ) : baseAssetResults.length === 0 ? (
                     <div className="px-3 py-2 text-sm text-gray-400">
                       No assets found
                     </div>
                   ) : (
-                    baseAssetResults.map(
-                      ({ asset, category }) => {
-                        const selected = baseAsset === asset
-                        return (
-                          <button
-                            key={`${category}-${asset}`}
-                            type="button"
-                            onClick={() => {
-                              setBaseAsset(asset)
-                              setBaseAssetQuery("")
-                              setBaseAssetDropdownOpen(false)
-                            }}
-                            className={`w-full flex items-center justify-between px-3 py-2 text-sm text-left transition-colors hover:bg-white/10 ${
-                              selected
-                                ? "bg-white/10 text-gray-50"
-                                : "text-gray-100"
-                            }`}
-                          >
-                            <span>{asset}</span>
-                            <span className="flex items-center gap-2 text-xs text-gray-400">
-                              {CATEGORY_LABELS[category]}
-                              {selected && (
-                                <Check className="w-4 h-4 text-gray-100" />
-                              )}
+                    baseAssetResults.map(({ asset, category }) => {
+                      const selected = baseAsset === asset.symbol;
+                      return (
+                        <button
+                          key={asset.id}
+                          type="button"
+                          onClick={() => {
+                            setBaseAsset(asset.symbol);
+                            setBaseAssetQuery("");
+                            setBaseAssetDropdownOpen(false);
+                          }}
+                          className={`w-full flex items-center justify-between px-3 py-2 text-sm text-left transition-colors hover:bg-white/10 ${
+                            selected
+                              ? "bg-white/10 text-gray-50"
+                              : "text-gray-100"
+                          }`}
+                        >
+                          <span>
+                            {asset.symbol}
+                            <span className="ml-2 text-xs text-gray-400">
+                              {asset.name}
                             </span>
-                          </button>
-                        )
-                      }
-                    )
+                          </span>
+                          <span className="flex items-center gap-2 text-xs text-gray-400">
+                            {CATEGORY_LABELS[category]}
+                            {selected && (
+                              <Check className="w-4 h-4 text-gray-100" />
+                            )}
+                          </span>
+                        </button>
+                      );
+                    })
                   )}
                 </div>
               )}
 
-              {baseAsset && (
+              {baseAsset && baseAssetRow && (
                 <div className="mt-4 rounded-xl border border-white/10 bg-white/5 p-4 space-y-2">
                   <h4 className="text-xs font-semibold text-gray-300 uppercase tracking-wide">
                     Asset overview
                   </h4>
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-100">
-                      {baseAsset}
+                      {baseAssetRow.symbol} — {baseAssetRow.name}
                     </span>
                     <span className="text-xs text-gray-400">
                       {CATEGORY_LABELS[baseCategory]}
                     </span>
                   </div>
                   <p className="text-xs text-gray-400">
-                    This asset will be used as the common benchmark for all
-                    selected algorithms.
+                    This asset will be used as the common benchmark
+                    for all selected algorithms.
                   </p>
                 </div>
               )}
@@ -479,8 +543,8 @@ const BatchConfiguration: React.FC<BatchConfigurationProps> = (props) => {
           setMultiAlgoParams={setMultiAlgoParams}
         />
       </div>
-    )
-  }
+    );
+  };
 
   return (
     <Card className="glass-card">
@@ -563,7 +627,7 @@ const BatchConfiguration: React.FC<BatchConfigurationProps> = (props) => {
           : renderMultiAlgoSection()}
       </CardContent>
     </Card>
-  )
-}
+  );
+};
 
-export default BatchConfiguration
+export default BatchConfiguration;

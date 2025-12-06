@@ -1,5 +1,4 @@
-// frontend/src/api/simulations.ts
-
+// src/api/simulations.ts
 import { API_BASE_URL } from "./config";
 
 // ===== Tipos de petición =====
@@ -14,6 +13,9 @@ export type SimulationRequest = {
   end_date: string;   // "YYYY-MM-DD"
   initial_capital: number;
   params: Record<string, number>;
+  // Info de batch (solo se usa en modo batch)
+  batch_name?: string | null;
+  batch_group_id?: string | null;
 };
 
 // ===== Tipos de respuesta =====
@@ -31,10 +33,20 @@ export type Trade = {
   profit_loss: number;   // P&L de ese trade
 };
 
+export type BenchmarkMetrics = {
+  name: string;
+  final_equity: number;
+  total_return: number;  // 0.25 = +25%
+  max_drawdown: number;  // 0.15 = 15% o 15
+  sharpe_ratio: number;
+  equity_curve: EquityPoint[];
+};
+
 // Resumen usado en la vista History
 export type SimulationSummary = {
   id: number;
   created_at: string;
+
   asset: string;
   algorithm: string;
   start_date: string;
@@ -42,12 +54,16 @@ export type SimulationSummary = {
   initial_capital: number;
   profit_loss: number;
   profit_loss_percentage: number;
+
+  // Info de batch
+  batch_name?: string | null;
+  batch_group_id?: string | null;
 };
 
 // Detalle completo de una simulación (run y get_simulation)
 export type SimulationDetail = {
   id: number;
-  status: string; // p.ej. "completed", "running", etc.
+  status: string; // "completed", "running", etc.
 
   asset: string;
   algorithm: string;
@@ -55,9 +71,9 @@ export type SimulationDetail = {
   end_date: string;
   initial_capital: number;
 
-  final_equity: number;  // equity final de la simulación
-  total_return: number;  // 0.03 = +3% (respecto a initial_capital)
-  max_drawdown: number;  // en porcentaje, ej. 15.2 = -15.2%
+  final_equity: number;
+  total_return: number;   // 0.03 = +3% respecto a initial_capital
+  max_drawdown: number;   // porcentaje, ej. 15.2 = -15.2%
   sharpe_ratio: number;
 
   equity_curve: EquityPoint[];
@@ -66,14 +82,23 @@ export type SimulationDetail = {
   number_of_trades: number;
   winning_trades: number;
   losing_trades: number;
-  accuracy: number;      // 0–100 (win rate en %)
+  accuracy: number;       // 0–100 (win rate en %)
 
   trades: Trade[];
+
+  // Benchmark omnisciente asociado (si existe)
+  benchmark?: BenchmarkMetrics | null;
+
+  // Parámetros usados en el backtest (modo avanzado)
+  params?: Record<string, number> | null;
+
+  // Info de batch
+  batch_name?: string | null;
+  batch_group_id?: string | null;
 };
 
 // ===== Funciones API =====
 
-// Al lanzar simulación, devolvemos también el detalle completo
 export async function runSimulation(
   payload: SimulationRequest
 ): Promise<SimulationDetail> {
@@ -91,9 +116,7 @@ export async function runSimulation(
   return (await res.json()) as SimulationDetail;
 }
 
-export async function getSimulation(
-  id: number
-): Promise<SimulationDetail> {
+export async function getSimulation(id: number): Promise<SimulationDetail> {
   const res = await fetch(`${API_BASE_URL}/simulations/${id}`);
 
   if (!res.ok) {
@@ -120,7 +143,7 @@ export async function listSimulations(params?: {
       ? `${API_BASE_URL}/simulations?${query.toString()}`
       : `${API_BASE_URL}/simulations`;
 
-  const res = await fetch(url, { method: "GET" });
+  const res = await fetch(url);
 
   if (!res.ok) {
     const text = await res.text();

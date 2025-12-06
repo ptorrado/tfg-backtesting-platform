@@ -15,12 +15,7 @@ import {
 import { Card, CardHeader, CardTitle, CardContent } from "../ui/card";
 import { Asset, listAssets } from "../../api/assets";
 
-export type AssetCategoryKey =
-  | "stocks"
-  | "crypto"
-  | "etf"
-  | "commodities"
-  | "index";
+export type AssetCategoryKey = "stocks" | "crypto" | "etf" | "commodities" | "index";
 
 type AssetCategory = {
   key: AssetCategoryKey;
@@ -29,11 +24,11 @@ type AssetCategory = {
 };
 
 const ASSET_CATEGORIES: AssetCategory[] = [
-  { key: "stocks", label: "Stocks", icon: TrendingUp },
-  { key: "crypto", label: "Crypto", icon: Bitcoin },
-  { key: "etf", label: "ETF", icon: BarChart3 },
+  { key: "stocks",      label: "Stocks",      icon: TrendingUp },
+  { key: "crypto",      label: "Crypto",      icon: Bitcoin },
+  { key: "etf",         label: "ETF",         icon: BarChart3 },
   { key: "commodities", label: "Commodities", icon: Landmark },
-  { key: "index", label: "Index", icon: DollarSign },
+  { key: "index",       label: "Index",       icon: DollarSign },
 ];
 
 type AssetSelectorProps = {
@@ -71,7 +66,6 @@ const AssetSelector: React.FC<AssetSelectorProps> = ({
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
 
-  // Cargamos assets desde la API
   const {
     data: assets = [],
     isLoading,
@@ -84,7 +78,6 @@ const AssetSelector: React.FC<AssetSelectorProps> = ({
   const currentCategory =
     ASSET_CATEGORIES.find((c) => c.key === assetType) ?? ASSET_CATEGORIES[0];
 
-  // Filtrado por categoría + búsqueda
   const filteredAssets: AssetResult[] = useMemo(() => {
     if (isLoading || isError) return [];
 
@@ -94,16 +87,16 @@ const AssetSelector: React.FC<AssetSelectorProps> = ({
       return cat === currentCategory.key;
     });
 
-    // 2) Si no hay query, devolvemos todos los de la categoría
     const q = query.toLowerCase().trim();
     if (!q) {
+      // sin búsqueda -> solo categoría activa
       return byCategory.map((a) => ({
         asset: a,
         category: currentCategory.key,
       }));
     }
 
-    // 3) Si hay query, buscamos en symbol + name en TODAS las categorías
+    // 2) Con búsqueda -> buscamos en todas las categorías
     const results: AssetResult[] = [];
     for (const a of assets) {
       const cat = mapAssetTypeToCategory(a.asset_type);
@@ -114,6 +107,7 @@ const AssetSelector: React.FC<AssetSelectorProps> = ({
         results.push({ asset: a, category: cat });
       }
     }
+
     return results;
   }, [assets, currentCategory.key, query, isLoading, isError]);
 
@@ -124,11 +118,11 @@ const AssetSelector: React.FC<AssetSelectorProps> = ({
     setOpen(false);
   };
 
-  // Encontrar categoría del asset seleccionado (para el overview)
   const selectedAsset = useMemo(
     () => assets.find((a) => a.symbol === assetName),
     [assets, assetName]
   );
+
   const selectedCategory =
     (selectedAsset && mapAssetTypeToCategory(selectedAsset.asset_type)) ||
     currentCategory.key;
@@ -150,7 +144,6 @@ const AssetSelector: React.FC<AssetSelectorProps> = ({
             {ASSET_CATEGORIES.map((cat) => {
               const Icon = cat.icon;
               const active = cat.key === assetType;
-
               return (
                 <button
                   key={cat.key}
@@ -160,12 +153,11 @@ const AssetSelector: React.FC<AssetSelectorProps> = ({
                     setAssetName("");
                     setQuery("");
                   }}
-                  className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-medium border transition-all
-                    ${
-                      active
-                        ? "bg-white/15 border-white/60 text-gray-100 shadow-sm"
-                        : "bg-white/[0.03] border-white/10 text-gray-300 hover:bg-white/10 hover:border-white/40 hover:text-gray-100"
-                    }`}
+                  className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-medium border transition-all ${
+                    active
+                      ? "bg-white/15 border-white/60 text-gray-100 shadow-sm"
+                      : "bg-white/[0.03] border-white/10 text-gray-300 hover:bg-white/10 hover:border-white/40 hover:text-gray-100"
+                  }`}
                 >
                   <Icon
                     className={`w-4 h-4 ${
@@ -213,7 +205,6 @@ const AssetSelector: React.FC<AssetSelectorProps> = ({
             </button>
           </div>
 
-          {/* Lista de resultados */}
           {open && (
             <div className="mt-2 max-h-60 overflow-y-auto rounded-xl border border-white/10 bg-white/5 shadow-xl custom-scrollbar">
               {isLoading ? (
@@ -236,12 +227,11 @@ const AssetSelector: React.FC<AssetSelectorProps> = ({
                       key={asset.id}
                       type="button"
                       onClick={() => handleSelect(asset, category)}
-                      className={`w-full flex items-center justify-between px-3 py-2 text-sm text-left transition-colors
-                        hover:bg-white/10 ${
-                          selected
-                            ? "bg-white/10 text-gray-50"
-                            : "text-gray-100"
-                        }`}
+                      className={`w-full flex items-center justify-between px-3 py-2 text-sm text-left transition-colors hover:bg-white/10 ${
+                        selected
+                          ? "bg-white/10 text-gray-50"
+                          : "text-gray-100"
+                      }`}
                     >
                       <span>
                         {asset.symbol}

@@ -1,14 +1,15 @@
-import React from "react"
-import { Card, CardContent } from "../ui/card"
-import { Switch } from "../ui/switch"
-import { Label } from "../ui/label"
-import { Layers, Zap } from "lucide-react"
+// src/components/simulator/BatchModeToggle.tsx
+import React from "react";
+import { Card, CardContent } from "../ui/card";
+import { Switch } from "../ui/switch";
+import { Label } from "../ui/label";
+import { Layers, Zap } from "lucide-react";
 
 export interface BatchModeToggleProps {
-  batchMode: boolean
-  setBatchMode: (value: boolean) => void
-  advancedMode: boolean
-  setAdvancedMode: (value: boolean) => void
+  batchMode: boolean;
+  setBatchMode: (value: boolean) => void;
+  advancedMode: boolean;
+  setAdvancedMode: (value: boolean) => void;
 }
 
 export default function BatchModeToggle({
@@ -75,5 +76,5 @@ export default function BatchModeToggle({
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }

@@ -1,5 +1,4 @@
-// frontend/src/pages/Simulator.tsx
-
+// src/pages/Simulator.tsx
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { PlayCircle, Loader2 } from "lucide-react";
@@ -9,8 +8,8 @@ import {
   SimulationRequest as ApiSimulationRequest,
 } from "../api/simulations";
 import { createPageUrl } from "../utils";
-import { Button } from "../components/ui/button";
 
+import { Button } from "../components/ui/button";
 import AssetSelector, {
   AssetCategoryKey,
 } from "../components/simulator/AssetSelector";
@@ -27,37 +26,32 @@ const Simulator: React.FC = () => {
   const navigate = useNavigate();
 
   const [assetName, setAssetName] = useState<string>("");
-  const [algorithm, setAlgorithm] = useState<string>(""); // se rellenará por defecto desde AlgorithmSelector
+  const [algorithm, setAlgorithm] = useState<string>("");
+
   const [startDate, setStartDate] = useState<string>("2023-01-01");
   const [endDate, setEndDate] = useState<string>("2024-01-01");
-  const [initialInvestment, setInitialInvestment] =
-    useState<number>(10000);
+  const [initialInvestment, setInitialInvestment] = useState<number>(10000);
   const [isRunning, setIsRunning] = useState<boolean>(false);
 
-  // Asset category (solo front, el backend de momento no lo usa)
-  const [assetType, setAssetType] =
-    useState<AssetCategoryKey>("stocks");
+  // Asset category (solo front, el backend no lo usa directamente)
+  const [assetType, setAssetType] = useState<AssetCategoryKey>("stocks");
 
-  // Batch mode (de momento hace N POST /simulations/run individuales)
+  // Batch mode
   const [batchMode, setBatchMode] = useState<boolean>(false);
   const [batchName, setBatchName] = useState<string>("");
-  const [batchType, setBatchType] =
-    useState<"assets" | "algorithms">("assets");
+  const [batchType, setBatchType] = useState<"assets" | "algorithms">("assets");
   const [selectedAssets, setSelectedAssets] = useState<string[]>([]);
-  const [selectedAlgorithms, setSelectedAlgorithms] =
-    useState<string[]>([]);
+  const [selectedAlgorithms, setSelectedAlgorithms] = useState<string[]>([]);
   const [baseAsset, setBaseAsset] = useState<string>("");
   const [baseAlgorithm, setBaseAlgorithm] = useState<string>("");
 
   // Advanced mode
   const [advancedMode, setAdvancedMode] = useState<boolean>(false);
-  const [algorithmParams, setAlgorithmParams] =
-    useState<AlgoParams>({});
-  const [multiAlgoParams, setMultiAlgoParams] =
-    useState<MultiAlgoParams>({});
+  const [algorithmParams, setAlgorithmParams] = useState<AlgoParams>({});
+  const [multiAlgoParams, setMultiAlgoParams] = useState<MultiAlgoParams>({});
 
   // =========================================================
-  //                  HANDLER PRINCIPAL
+  // HANDLER PRINCIPAL
   // =========================================================
 
   const handleRunSimulation = async () => {
@@ -65,23 +59,22 @@ const Simulator: React.FC = () => {
     if (batchMode) {
       if (!batchName) return;
 
-      if (
+      const isMultiAssetInvalid =
         batchType === "assets" &&
-        (selectedAssets.length === 0 || !baseAlgorithm)
-      ) {
-        return;
-      }
-
-      if (
+        (selectedAssets.length === 0 || !baseAlgorithm);
+      const isMultiAlgoInvalid =
         batchType === "algorithms" &&
-        (selectedAlgorithms.length === 0 || !baseAsset)
-      ) {
-        return;
-      }
+        (selectedAlgorithms.length === 0 || !baseAsset);
+
+      if (isMultiAssetInvalid || isMultiAlgoInvalid) return;
 
       setIsRunning(true);
+
       try {
         const payloads: ApiSimulationRequest[] = [];
+        const batchGroupId = `${Date.now()}-${Math.random()
+          .toString(36)
+          .slice(2, 8)}`;
 
         if (batchType === "assets") {
           const params = advancedMode
@@ -90,41 +83,44 @@ const Simulator: React.FC = () => {
 
           selectedAssets.forEach((asset) => {
             payloads.push({
-              mode: "single",
+              mode: "batch",
               asset,
               algorithm: baseAlgorithm,
               start_date: startDate,
               end_date: endDate,
               initial_capital: initialInvestment,
               params,
+              batch_name: batchName,
+              batch_group_id: batchGroupId,
             });
           });
         } else {
           selectedAlgorithms.forEach((algo) => {
             const algoParams = advancedMode
-              ? ((multiAlgoParams[algo] ?? {}) as Record<
-                  string,
-                  number
-                >)
+              ? ((multiAlgoParams[algo] ?? {}) as Record<string, number>)
               : {};
 
             payloads.push({
-              mode: "single",
+              mode: "batch",
               asset: baseAsset,
               algorithm: algo,
               start_date: startDate,
               end_date: endDate,
               initial_capital: initialInvestment,
               params: algoParams,
+              batch_name: batchName,
+              batch_group_id: batchGroupId,
             });
           });
         }
 
-        // Lanzamos todas las simulaciones en paralelo
-        await Promise.all(payloads.map((p) => runSimulationApi(p)));
+        const results = await Promise.all(payloads.map(runSimulationApi));
+        const idsParam = results.map((s) => s.id).join(",");
+        const batchNameParam = encodeURIComponent(batchName);
 
-        // De momento, tras un batch te llevo al History
-        navigate(createPageUrl("History"));
+        navigate(
+          `${createPageUrl("Results")}?ids=${idsParam}&batchName=${batchNameParam}`
+        );
       } catch (err) {
         console.error("Error running batch simulation", err);
       } finally {
@@ -135,17 +131,12 @@ const Simulator: React.FC = () => {
     }
 
     // --------- MODO SINGLE ---------
-    if (
-      !assetName ||
-      !algorithm ||
-      !startDate ||
-      !endDate ||
-      !initialInvestment
-    ) {
+    if (!assetName || !algorithm || !startDate || !endDate || !initialInvestment) {
       return;
     }
 
     setIsRunning(true);
+
     try {
       const params = advancedMode
         ? (algorithmParams as Record<string, number>)
@@ -163,8 +154,7 @@ const Simulator: React.FC = () => {
 
       const simulation = await runSimulationApi(payload);
 
-      // 👇 Result carga todo desde GET /simulations/{id}
-      navigate(createPageUrl("Results") + `?id=${simulation.id}`);
+      navigate(`${createPageUrl("Results")}?id=${simulation.id}`);
     } catch (err) {
       console.error("Error running simulation", err);
     } finally {
@@ -189,7 +179,7 @@ const Simulator: React.FC = () => {
       );
 
   // =========================================================
-  //                        RENDER
+  // RENDER
   // =========================================================
 
   return (

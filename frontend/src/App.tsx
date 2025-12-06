@@ -1,9 +1,11 @@
-import React from "react"
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom"
-import Layout from "./layout/Layout"
-import Simulator from "./pages/Simulator"
-import Results from "./pages/Result"
-import History from "./pages/History"
+// src/App.tsx
+import React from "react";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+
+import Layout from "./layout/Layout";
+import Simulator from "./pages/Simulator";
+import Results from "./pages/Result";
+import History from "./pages/History";
 
 export default function App() {
   return (
@@ -17,5 +19,5 @@ export default function App() {
         </Routes>
       </Layout>
     </BrowserRouter>
-  )
+  );
 }

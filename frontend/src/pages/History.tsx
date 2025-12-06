@@ -36,11 +36,15 @@ export default function History() {
   const queryClient = useQueryClient();
 
   const [viewMode, setViewMode] = useState<ViewMode>("cards");
-
   const [assetFilter, setAssetFilter] = useState("");
   const [sortBy, setSortBy] = useState<SortBy>("created_at");
   const [sortDirection, setSortDirection] =
     useState<SortDirection>("desc");
+
+  const [simToDelete, setSimToDelete] = useState<Simulation | null>(
+    null
+  );
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const {
     data: simulations = [],
@@ -55,29 +59,7 @@ export default function History() {
     <LineChart className="w-6 h-6 text-gray-400" strokeWidth={1.5} />
   );
 
-  const handleOpenSimulation = (id: number) => {
-    navigate(createPageUrl("Results") + `?id=${id}`);
-  };
-
-  const handleDeleteSimulation = async (
-    id: number,
-    asset: string
-  ) => {
-    const confirmed = window.confirm(
-      `Are you sure you want to delete this simulation for ${asset}? This action cannot be undone.`
-    );
-    if (!confirmed) return;
-
-    try {
-      await deleteSimulation(id);
-      await queryClient.invalidateQueries({ queryKey: ["simulations"] });
-    } catch (err) {
-      console.error("Failed to delete simulation", err);
-      alert("Error deleting simulation. Please try again.");
-    }
-  };
-
-  // Filtro + ordenación en front
+  // Filtro + ordenación
   const processedSimulations: Simulation[] = useMemo(() => {
     const filtered = simulations.filter((s) => {
       if (!assetFilter.trim()) return true;
@@ -101,6 +83,39 @@ export default function History() {
     return sorted;
   }, [simulations, assetFilter, sortBy, sortDirection]);
 
+  const handleOpenSimulation = (id: number) => {
+    navigate(createPageUrl("Results") + `?id=${id}`);
+  };
+
+  const handleAskDelete = (
+    simulation: Simulation,
+    e: React.MouseEvent
+  ) => {
+    e.stopPropagation();
+    setSimToDelete(simulation);
+  };
+
+  const handleCancelDelete = () => {
+    if (isDeleting) return;
+    setSimToDelete(null);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!simToDelete) return;
+    try {
+      setIsDeleting(true);
+      await deleteSimulation(simToDelete.id);
+      setSimToDelete(null);
+      await queryClient.invalidateQueries({
+        queryKey: ["simulations"],
+      });
+    } catch (err) {
+      console.error("Error deleting simulation:", err);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#0f1419] p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
@@ -115,7 +130,6 @@ export default function History() {
             </p>
           </div>
 
-          {/* View toggle */}
           <div className="inline-flex items-center glass-card rounded-full bg-[#111827]/95 p-1 shadow-lg shadow-black/40 border border-white/10">
             <button
               className={`flex items-center gap-2 px-4 py-1.5 text-sm font-medium rounded-full transition-colors ${
@@ -154,7 +168,6 @@ export default function History() {
 
         {/* Filtros y orden */}
         <div className="mb-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          {/* Filtro por asset */}
           <div className="flex items-center gap-2">
             <span className="text-xs text-gray-400">Filter by asset:</span>
             <input
@@ -166,7 +179,6 @@ export default function History() {
             />
           </div>
 
-          {/* Orden */}
           <div className="flex items-center gap-3">
             <span className="text-xs text-gray-400">Sort by:</span>
             <select
@@ -216,7 +228,6 @@ export default function History() {
             </CardContent>
           </Card>
         ) : processedSimulations.length === 0 ? (
-          // Empty state
           <Card className="glass-card border-white/5 bg-[#111827]/80">
             <CardContent className="p-12 text-center">
               <HistoryIcon
@@ -232,7 +243,7 @@ export default function History() {
             </CardContent>
           </Card>
         ) : viewMode === "cards" ? (
-          // ==== Cards view ====
+          /* ==== Cards view ==== */
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {processedSimulations.map((simulation: Simulation) => {
               const isProfit = simulation.profit_loss >= 0;
@@ -261,19 +272,14 @@ export default function History() {
                           </p>
                         </div>
                       </div>
+
+                      {/* Botón eliminar */}
                       <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteSimulation(
-                            simulation.id,
-                            simulation.asset
-                          );
-                        }}
-                        className="text-gray-500 hover:text-red-400 transition-colors"
+                        className="text-gray-500 hover:text-red-400 transition-colors rounded-full p-1 hover:bg-red-500/10"
+                        onClick={(e) => handleAskDelete(simulation, e)}
                         aria-label="Delete simulation"
                       >
-                        <X className="w-4 h-4" strokeWidth={2} />
+                        <X className="w-4 h-4" strokeWidth={1.8} />
                       </button>
                     </div>
 
@@ -319,17 +325,18 @@ export default function History() {
                         </Badge>
                       </div>
 
+                      {/* Periodo en cards */}
                       <div className="flex items-center justify-between">
                         <span className="text-gray-400">Period</span>
                         <span className="text-xs text-gray-300">
                           {format(
                             new Date(simulation.start_date),
-                            "yyyy-MM-dd"
+                            "yyyy/MM/dd"
                           )}{" "}
-                          –{" "}
+                          -{" "}
                           {format(
                             new Date(simulation.end_date),
-                            "yyyy-MM-dd"
+                            "yyyy/MM/dd"
                           )}
                         </span>
                       </div>
@@ -354,12 +361,13 @@ export default function History() {
             })}
           </div>
         ) : (
-          // ==== List view (compact) ====
+          /* ==== List view (compact) ==== */
           <div className="overflow-hidden rounded-2xl border glass-card border-white/10 bg-[#111827]/90">
             {/* Header row */}
-            <div className="grid grid-cols-5 px-4 py-2 text-xs font-semibold text-gray-300 border-b border-white/10 bg-black/20">
-              <span>Date</span>
-              <span className="col-span-2">Asset / Algo</span>
+            <div className="grid grid-cols-5 px-4 py-2 text-sm font-semibold text-gray-300 border-b border-white/10 bg-black/20">
+              <span>Created</span>
+              <span>Period</span>
+              <span>Asset / Algo</span>
               <span className="text-right">Initial</span>
               <span className="text-right">P&amp;L</span>
             </div>
@@ -372,8 +380,9 @@ export default function History() {
                 <button
                   key={simulation.id}
                   onClick={() => handleOpenSimulation(simulation.id)}
-                  className="w-full grid grid-cols-5 px-4 py-2 text-xs text-gray-200 hover:bg-white/5 transition"
+                  className="w-full grid grid-cols-5 px-4 py-2 text-sm text-gray-200 hover:bg-white/5 transition"
                 >
+                  {/* Fecha de creación */}
                   <span className="text-left">
                     {format(
                       new Date(simulation.created_at),
@@ -381,19 +390,35 @@ export default function History() {
                     )}
                   </span>
 
-                  <span className="col-span-2 text-left">
+                  {/* Periodo yyyy/MM/dd - yyyy/MM/dd */}
+                  <span className="text-left">
+                    {format(
+                      new Date(simulation.start_date),
+                      "yyyy/MM/dd"
+                    )}{" "}
+                    -{" "}
+                    {format(
+                      new Date(simulation.end_date),
+                      "yyyy/MM/dd"
+                    )}
+                  </span>
+
+                  {/* Asset / Algo */}
+                  <span className="text-left">
                     <span className="block font-medium text-gray-100">
                       {simulation.asset}
                     </span>
-                    <span className="block text-[11px] text-gray-500">
+                    <span className="block text-xs text-gray-500">
                       {simulation.algorithm.replace(/_/g, " ")}
                     </span>
                   </span>
 
+                  {/* Capital inicial */}
                   <span className="text-right text-gray-200">
                     ${simulation.initial_capital.toLocaleString()}
                   </span>
 
+                  {/* P&L */}
                   <span
                     className={`text-right font-semibold ${
                       isProfit ? "text-green-400" : "text-red-400"
@@ -408,6 +433,42 @@ export default function History() {
           </div>
         )}
       </div>
+
+      {/* Modal de confirmación de borrado */}
+      {simToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+          <div className="bg-[#020617] border border-white/10 rounded-2xl shadow-2xl w-full max-w-sm p-6">
+            <h2 className="text-lg font-semibold text-gray-100 mb-2">
+              Delete simulation
+            </h2>
+            <p className="text-sm text-gray-300 mb-4">
+              Are you sure you want to delete this simulation for{" "}
+              <span className="font-semibold">{simToDelete.asset}</span>?
+              <br />
+              <span className="text-red-400">
+                This action cannot be undone.
+              </span>
+            </p>
+
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={handleCancelDelete}
+                disabled={isDeleting}
+                className="px-4 py-1.5 text-sm rounded-full border border-white/15 text-gray-200 hover:bg-white/5 disabled:opacity-60"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmDelete}
+                disabled={isDeleting}
+                className="px-4 py-1.5 text-sm rounded-full bg-red-500/90 text-white hover:bg-red-500 disabled:opacity-60"
+              >
+                {isDeleting ? "Deleting..." : "Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

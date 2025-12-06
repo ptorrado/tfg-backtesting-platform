@@ -1,3 +1,4 @@
+// src/api/assets.ts
 import { API_BASE_URL } from "./config";
 
 export interface Asset {
@@ -14,6 +15,5 @@ export async function listAssets(): Promise<Asset[]> {
     throw new Error("Failed to load assets");
   }
 
-  const data = (await res.json()) as Asset[];
-  return data;
+  return (await res.json()) as Asset[];
 }

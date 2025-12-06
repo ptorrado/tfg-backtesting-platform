@@ -75,9 +75,6 @@ class Simulation(Base):
     max_drawdown = Column(Float, nullable=False)
     sharpe_ratio = Column(Float, nullable=False)
 
-    equity_curve = Column(JSON, nullable=False)
-    trades = Column(JSON, nullable=False)
-
     status = Column(String, nullable=False, default="completed")
     number_of_trades = Column(Integer, nullable=False, default=0)
     winning_trades = Column(Integer, nullable=False, default=0)
@@ -90,4 +87,60 @@ class Simulation(Base):
         nullable=False,
     )
 
+    # 👇 NUEVO: información de batch (para agrupar multi-sim)
+    batch_name = Column(String, nullable=True)
+    batch_group_id = Column(String, nullable=True, index=True)
+
+    # 👇 parámetros usados en el backtest (modo avanzado)
+    params = Column(JSON, nullable=True)
+
     asset = relationship("Asset", back_populates="simulations")
+
+    # Nuevas relaciones normalizadas
+    equity_points = relationship(
+        "SimulationEquityPoint",
+        back_populates="simulation",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+    trades = relationship(
+        "SimulationTrade",
+        back_populates="simulation",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+
+
+class SimulationEquityPoint(Base):
+    __tablename__ = "simulation_equity_curve"
+
+    id = Column(Integer, primary_key=True, index=True)
+    simulation_id = Column(
+        Integer,
+        ForeignKey("simulations.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    date = Column(Date, nullable=False)
+    equity = Column(Float, nullable=False)
+
+    simulation = relationship("Simulation", back_populates="equity_points")
+
+
+class SimulationTrade(Base):
+    __tablename__ = "simulation_trades"
+
+    id = Column(Integer, primary_key=True, index=True)
+    simulation_id = Column(
+        Integer,
+        ForeignKey("simulations.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    date = Column(Date, nullable=False)
+    type = Column(String, nullable=False)  # "buy" / "sell"
+    price = Column(Float, nullable=False)
+    quantity = Column(Float, nullable=False)
+    profit_loss = Column(Float, nullable=False)
+
+    simulation = relationship("Simulation", back_populates="trades")

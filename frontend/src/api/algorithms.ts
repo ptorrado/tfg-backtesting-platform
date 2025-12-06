@@ -1,4 +1,5 @@
-// frontend/src/api/algorithms.ts
+// src/api/algorithms.ts
+import { API_BASE_URL } from "./config";
 
 export type AlgoParam = {
   name: string;
@@ -19,13 +20,12 @@ export type AlgorithmInfo = {
   params: AlgoParam[];
 };
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://127.0.0.1:8000";
-
 export async function listAlgorithms(): Promise<AlgorithmInfo[]> {
   const res = await fetch(`${API_BASE_URL}/algorithms`);
+
   if (!res.ok) {
     throw new Error(`Failed to fetch algorithms: ${res.status}`);
   }
-  return res.json();
+
+  return (await res.json()) as AlgorithmInfo[];
 }

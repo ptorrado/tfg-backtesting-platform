@@ -1,3 +1,4 @@
+// src/api/marketData.ts
 import { API_BASE_URL } from "./config";
 
 export type MarketCandle = {
@@ -12,7 +13,7 @@ export type MarketCandle = {
 export type MarketDataParams = {
   asset: string;
   start_date: string;
-  end_date: string; 
+  end_date: string;
 };
 
 export async function getMarketData(
@@ -27,6 +28,7 @@ export async function getMarketData(
   const res = await fetch(`${API_BASE_URL}/market-data?${query.toString()}`);
 
   if (res.status === 404) {
+    // Sin datos -> el front genera serie sintética
     return [];
   }
 
@@ -34,5 +36,5 @@ export async function getMarketData(
     throw new Error(`Failed to fetch market data: ${res.status}`);
   }
 
-  return res.json();
+  return (await res.json()) as MarketCandle[];
 }

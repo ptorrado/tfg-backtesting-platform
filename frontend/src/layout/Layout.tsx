@@ -1,8 +1,9 @@
 // src/layout/Layout.tsx
-import React from "react"
-import { Link, useLocation } from "react-router-dom"
-import { createPageUrl } from "../utils"
-import { History, PlayCircle, BarChart3, Menu, X } from "lucide-react"
+import React from "react";
+import { Link, useLocation } from "react-router-dom";
+import { createPageUrl } from "../utils";
+import { History, PlayCircle, BarChart3, Menu, X } from "lucide-react";
+
 import {
   Sidebar,
   SidebarContent,
@@ -17,28 +18,19 @@ import {
   SidebarProvider,
   SidebarTrigger,
   useSidebar,
-} from "../components/ui/sidebar"
+} from "../components/ui/sidebar";
 
-const APP_NAME = "Backtest Lab"
-const APP_TAGLINE = "Educational Backtesting Sandbox"
+const APP_NAME = "Backtest Lab";
+const APP_TAGLINE = "Educational Backtesting Sandbox";
 
 const navigationItems = [
-  {
-    title: "New Simulation",
-    url: createPageUrl("Simulator"),
-    icon: PlayCircle,
-  },
-  {
-    title: "History",
-    url: createPageUrl("History"),
-    icon: History,
-  },
-]
+  { title: "New Simulation", url: createPageUrl("Simulator"), icon: PlayCircle },
+  { title: "History", url: createPageUrl("History"), icon: History },
+];
 
 function SidebarCloseButton() {
-  const { isMobile, setOpenMobile } = useSidebar()
-
-  if (!isMobile) return null
+  const { isMobile, setOpenMobile } = useSidebar();
+  if (!isMobile) return null;
 
   return (
     <button
@@ -47,16 +39,15 @@ function SidebarCloseButton() {
     >
       <X className="w-5 h-5" strokeWidth={2} />
     </button>
-  )
+  );
 }
 
 interface LayoutProps {
-  children: React.ReactNode
-  currentPageName?: string
+  children: React.ReactNode;
 }
 
 export default function Layout({ children }: LayoutProps) {
-  const location = useLocation()
+  const location = useLocation();
 
   return (
     <SidebarProvider>
@@ -174,10 +165,9 @@ export default function Layout({ children }: LayoutProps) {
               </h1>
             </div>
           </header>
-
           <div className="flex-1 overflow-auto">{children}</div>
         </main>
       </div>
     </SidebarProvider>
-  )
+  );
 }
