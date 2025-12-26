@@ -31,6 +31,71 @@ type ViewMode = "cards" | "list";
 type SortBy = "created_at" | "profit_loss";
 type SortDirection = "asc" | "desc";
 
+// ---- Tipos internos para manejar singles vs batches ----
+
+type HistorySingleItem = {
+  kind: "single";
+  sim: Simulation;
+};
+
+type HistoryBatchItem = {
+  kind: "batch";
+  batch_group_id: string;
+  batch_name: string | null;
+  created_at: string;
+  simulations: Simulation[];
+};
+
+type HistoryItem = HistorySingleItem | HistoryBatchItem;
+
+// ---- Helpers ----
+
+function getItemProfitLoss(item: HistoryItem): number {
+  if (item.kind === "single") return item.sim.profit_loss;
+  return item.simulations.reduce(
+    (sum, s) => sum + s.profit_loss,
+    0
+  );
+}
+
+function getItemCreatedAt(item: HistoryItem): string {
+  return item.kind === "single" ? item.sim.created_at : item.created_at;
+}
+
+function getBatchLabels(batch: HistoryBatchItem): {
+  title: string;
+  subtitle: string;
+} {
+  const sims = batch.simulations;
+  const assetSet = new Set(sims.map((s) => s.asset));
+  const algoSet = new Set(sims.map((s) => s.algorithm));
+
+  let title = batch.batch_name || "";
+  let subtitle = "";
+
+  // Caso típico: mismo asset, varios algoritmos (multi-algo)
+  if (assetSet.size === 1 && algoSet.size > 1) {
+    title = Array.from(assetSet)[0];
+    subtitle = Array.from(algoSet)
+      .map((a) => a.replace(/_/g, " "))
+      .join(", ");
+  }
+  // Varios assets, mismo algoritmo
+  else if (assetSet.size > 1 && algoSet.size === 1) {
+    title = Array.from(algoSet)[0].replace(/_/g, " ");
+    subtitle = Array.from(assetSet).join(", ");
+  }
+  // Mezcla o batch_name arbitrario
+  else {
+    if (!title) {
+      title = `${sims.length} simulations batch`;
+    }
+    subtitle = `${assetSet.size} assets · ${algoSet.size} algos`;
+  }
+
+  return { title, subtitle };
+}
+
 export default function History() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -41,7 +106,7 @@ export default function History() {
   const [sortDirection, setSortDirection] =
     useState<SortDirection>("desc");
 
-  const [simToDelete, setSimToDelete] = useState<Simulation | null>(
+  const [itemToDelete, setItemToDelete] = useState<HistoryItem | null>(
     null
   );
   const [isDeleting, setIsDeleting] = useState(false);
@@ -59,23 +124,78 @@ export default function History() {
     <LineChart className="w-6 h-6 text-gray-400" strokeWidth={1.5} />
   );
 
-  // Filtro + ordenación
-  const processedSimulations: Simulation[] = useMemo(() => {
-    const filtered = simulations.filter((s) => {
-      if (!assetFilter.trim()) return true;
-      return s.asset
-        .toLowerCase()
-        .includes(assetFilter.trim().toLowerCase());
+  // ====== Filtro + agrupación por batch + ordenación ======
+  const processedItems: HistoryItem[] = useMemo(() => {
+    // 1) Separamos singles y agrupamos por batch_group_id
+    const batchMap = new Map<string, Simulation[]>();
+    const singles: Simulation[] = [];
+
+    for (const sim of simulations) {
+      if (sim.batch_group_id) {
+        const key = sim.batch_group_id;
+        const arr = batchMap.get(key) || [];
+        arr.push(sim);
+        batchMap.set(key, arr);
+      } else {
+        singles.push(sim);
+      }
+    }
+
+    const items: HistoryItem[] = [];
+
+    // 2) Metemos singles como items
+    singles.forEach((sim) => {
+      items.push({ kind: "single", sim });
     });
 
+    // 3) Metemos batches
+    Array.from(batchMap.entries()).forEach(
+      ([groupId, simsInBatchRaw]) => {
+        if (!simsInBatchRaw.length) return;
+
+        // Ordenamos dentro del batch por created_at para tener fechas consistentes
+        const sims = [...simsInBatchRaw].sort(
+          (a, b) =>
+            new Date(a.created_at).getTime() -
+            new Date(b.created_at).getTime()
+        );
+
+        const created_at = sims[0].created_at;
+        const batch_name = sims[0].batch_name ?? null;
+
+        items.push({
+          kind: "batch",
+          batch_group_id: groupId,
+          batch_name,
+          created_at,
+          simulations: sims,
+        });
+      }
+    );
+
+    // 4) Filtro por asset (si se ha puesto algo)
+    const filtered = items.filter((item) => {
+      if (!assetFilter.trim()) return true;
+      const needle = assetFilter.trim().toLowerCase();
+
+      if (item.kind === "single") {
+        return item.sim.asset.toLowerCase().includes(needle);
+      } else {
+        return item.simulations.some((s) =>
+          s.asset.toLowerCase().includes(needle)
+        );
+      }
+    });
+
+    // 5) Ordenación
     const sorted = filtered.slice().sort((a, b) => {
       if (sortBy === "created_at") {
-        const tA = new Date(a.created_at).getTime();
-        const tB = new Date(b.created_at).getTime();
+        const tA = new Date(getItemCreatedAt(a)).getTime();
+        const tB = new Date(getItemCreatedAt(b)).getTime();
         return sortDirection === "desc" ? tB - tA : tA - tB;
       } else {
-        const pA = a.profit_loss;
-        const pB = b.profit_loss;
+        const pA = getItemProfitLoss(a);
+        const pB = getItemProfitLoss(b);
         return sortDirection === "desc" ? pB - pA : pA - pB;
       }
     });
@@ -83,38 +203,71 @@ export default function History() {
     return sorted;
   }, [simulations, assetFilter, sortBy, sortDirection]);
 
-  const handleOpenSimulation = (id: number) => {
+  // ====== Navegación ======
+
+  const handleOpenSingle = (id: number) => {
     navigate(createPageUrl("Results") + `?id=${id}`);
   };
 
-  const handleAskDelete = (
-    simulation: Simulation,
+  const handleOpenBatch = (batch: HistoryBatchItem) => {
+    const { title } = getBatchLabels(batch);
+    const ids = batch.simulations.map((s) => s.id).join(",");
+    const url =
+      createPageUrl("Results") +
+      `?ids=${ids}&batchName=${encodeURIComponent(title)}`;
+    navigate(url);
+  };
+
+  // ====== Borrado ======
+
+  const handleAskDeleteSingle = (
+    sim: Simulation,
     e: React.MouseEvent
   ) => {
     e.stopPropagation();
-    setSimToDelete(simulation);
+    setItemToDelete({ kind: "single", sim });
+  };
+
+  const handleAskDeleteBatch = (
+    batch: HistoryBatchItem,
+    e: React.MouseEvent
+  ) => {
+    e.stopPropagation();
+    setItemToDelete(batch);
   };
 
   const handleCancelDelete = () => {
     if (isDeleting) return;
-    setSimToDelete(null);
+    setItemToDelete(null);
   };
 
   const handleConfirmDelete = async () => {
-    if (!simToDelete) return;
+    if (!itemToDelete) return;
     try {
       setIsDeleting(true);
-      await deleteSimulation(simToDelete.id);
-      setSimToDelete(null);
+
+      if (itemToDelete.kind === "single") {
+        await deleteSimulation(itemToDelete.sim.id);
+      } else {
+        await Promise.all(
+          itemToDelete.simulations.map((s) =>
+            deleteSimulation(s.id)
+          )
+        );
+      }
+
+      setItemToDelete(null);
       await queryClient.invalidateQueries({
         queryKey: ["simulations"],
       });
     } catch (err) {
-      console.error("Error deleting simulation:", err);
+      console.error("Error deleting simulation(s):", err);
     } finally {
       setIsDeleting(false);
     }
   };
+
+  // =========================================================
 
   return (
     <div className="min-h-screen bg-[#0f1419] p-4 md:p-8">
@@ -227,7 +380,7 @@ export default function History() {
               </p>
             </CardContent>
           </Card>
-        ) : processedSimulations.length === 0 ? (
+        ) : processedItems.length === 0 ? (
           <Card className="glass-card border-white/5 bg-[#111827]/80">
             <CardContent className="p-12 text-center">
               <HistoryIcon
@@ -245,119 +398,264 @@ export default function History() {
         ) : viewMode === "cards" ? (
           /* ==== Cards view ==== */
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {processedSimulations.map((simulation: Simulation) => {
-              const isProfit = simulation.profit_loss >= 0;
+            {processedItems.map((item) => {
+              if (item.kind === "single") {
+                const sim = item.sim;
+                const isProfit = sim.profit_loss >= 0;
 
-              return (
-                <Card
-                  key={simulation.id}
-                  className="glass-card border-white/5 bg-[#111827]/90 hover:border-white/10 transition-all duration-200 cursor-pointer group overflow-hidden rounded-2xl"
-                  onClick={() => handleOpenSimulation(simulation.id)}
-                >
-                  <div
-                    className={`h-[3px] ${
-                      isProfit ? "bg-emerald-500" : "bg-red-500"
-                    } rounded-t-2xl`}
-                  />
-                  <CardContent className="p-5">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex items-center gap-2">
-                        <div>{getAssetIcon()}</div>
-                        <div>
-                          <h3 className="font-semibold text-gray-100 group-hover:text-emerald-400 transition-colors">
-                            {simulation.asset}
-                          </h3>
-                          <p className="text-xs text-gray-500">
-                            {simulation.algorithm.replace(/_/g, " ")}
-                          </p>
+                return (
+                  <Card
+                    key={sim.id}
+                    className="glass-card border-white/5 bg-[#111827]/90 hover:border-white/10 transition-all duration-200 cursor-pointer group overflow-hidden rounded-2xl"
+                    onClick={() => handleOpenSingle(sim.id)}
+                  >
+                    <div
+                      className={`h-[3px] ${
+                        isProfit ? "bg-emerald-500" : "bg-red-500"
+                      } rounded-t-2xl`}
+                    />
+                    <CardContent className="p-5">
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex items-center gap-2">
+                          <div>{getAssetIcon()}</div>
+                          <div>
+                            <h3 className="font-semibold text-gray-100 group-hover:text-emerald-400 transition-colors">
+                              {sim.asset}
+                            </h3>
+                            <p className="text-xs text-gray-500">
+                              {sim.algorithm.replace(/_/g, " ")}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Botón eliminar single */}
+                        <button
+                          className="text-gray-500 hover:text-red-400 transition-colors rounded-full p-1 hover:bg-red-500/10"
+                          onClick={(e) => handleAskDeleteSingle(sim, e)}
+                          aria-label="Delete simulation"
+                        >
+                          <X className="w-4 h-4" strokeWidth={1.8} />
+                        </button>
+                      </div>
+
+                      <div className="space-y-2 mb-4 text-sm">
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-400">P&amp;L</span>
+                          <span
+                            className={`font-semibold ${
+                              isProfit ? "text-green-400" : "text-red-400"
+                            }`}
+                          >
+                            {isProfit ? (
+                              <TrendingUp
+                                className="w-3 h-3 inline mr-1"
+                                strokeWidth={2}
+                              />
+                            ) : (
+                              <TrendingDown
+                                className="w-3 h-3 inline mr-1"
+                                strokeWidth={2}
+                              />
+                            )}
+                            {isProfit ? "+" : "-"}$
+                            {Math.abs(sim.profit_loss).toFixed(2)}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-400">Return</span>
+                          <Badge
+                            variant="outline"
+                            className={
+                              isProfit
+                                ? "bg-green-500/10 text-green-400 border-green-500/30"
+                                : "bg-red-500/10 text-red-400 border-red-500/30"
+                            }
+                          >
+                            {isProfit ? "+" : "-"}
+                            {Math.abs(
+                              sim.profit_loss_percentage
+                            ).toFixed(2)}
+                            %
+                          </Badge>
+                        </div>
+
+                        {/* Periodo en cards */}
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-400">Period</span>
+                          <span className="text-xs text-gray-300">
+                            {format(
+                              new Date(sim.start_date),
+                              "yyyy/MM/dd"
+                            )}{" "}
+                            -{" "}
+                            {format(
+                              new Date(sim.end_date),
+                              "yyyy/MM/dd"
+                            )}
+                          </span>
                         </div>
                       </div>
 
-                      {/* Botón eliminar */}
-                      <button
-                        className="text-gray-500 hover:text-red-400 transition-colors rounded-full p-1 hover:bg-red-500/10"
-                        onClick={(e) => handleAskDelete(simulation, e)}
-                        aria-label="Delete simulation"
-                      >
-                        <X className="w-4 h-4" strokeWidth={1.8} />
-                      </button>
-                    </div>
-
-                    <div className="space-y-2 mb-4 text-sm">
-                      <div className="flex items-center justify-between">
-                        <span className="text-gray-400">P&amp;L</span>
-                        <span
-                          className={`font-semibold ${
-                            isProfit ? "text-green-400" : "text-red-400"
-                          }`}
-                        >
-                          {isProfit ? (
-                            <TrendingUp
-                              className="w-3 h-3 inline mr-1"
-                              strokeWidth={2}
-                            />
-                          ) : (
-                            <TrendingDown
-                              className="w-3 h-3 inline mr-1"
-                              strokeWidth={2}
-                            />
-                          )}
-                          {isProfit ? "+" : "-"}$
-                          {Math.abs(simulation.profit_loss).toFixed(2)}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center justify-between">
-                        <span className="text-gray-400">Return</span>
-                        <Badge
-                          variant="outline"
-                          className={
-                            isProfit
-                              ? "bg-green-500/10 text-green-400 border-green-500/30"
-                              : "bg-red-500/10 text-red-400 border-red-500/30"
-                          }
-                        >
-                          {isProfit ? "+" : "-"}
-                          {Math.abs(
-                            simulation.profit_loss_percentage
-                          ).toFixed(2)}
-                          %
-                        </Badge>
-                      </div>
-
-                      {/* Periodo en cards */}
-                      <div className="flex items-center justify-between">
-                        <span className="text-gray-400">Period</span>
-                        <span className="text-xs text-gray-300">
+                      <div className="pt-3 border-t border-white/5 flex items-center justify-between text-xs text-gray-500">
+                        <div className="flex items-center gap-1">
+                          <Calendar className="w-3 h-3" strokeWidth={2} />
                           {format(
-                            new Date(simulation.start_date),
-                            "yyyy/MM/dd"
-                          )}{" "}
-                          -{" "}
-                          {format(
-                            new Date(simulation.end_date),
-                            "yyyy/MM/dd"
+                            new Date(sim.created_at),
+                            "MMM d, yyyy"
                           )}
-                        </span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <DollarSign className="w-3 h-3" strokeWidth={2} />
+                          ${sim.initial_capital.toLocaleString()}
+                        </div>
                       </div>
-                    </div>
+                    </CardContent>
+                  </Card>
+                );
+              } else {
+                // -------- Batch card --------
+                const batch = item;
+                const { title, subtitle } = getBatchLabels(batch);
 
-                    <div className="pt-3 border-t border-white/5 flex items-center justify-between text-xs text-gray-500">
-                      <div className="flex items-center gap-1">
-                        <Calendar className="w-3 h-3" strokeWidth={2} />
-                        {format(
-                          new Date(simulation.created_at),
-                          "MMM d, yyyy"
-                        )}
+                const totalPnl = getItemProfitLoss(batch);
+                const totalInitial = batch.simulations.reduce(
+                  (sum, s) => sum + s.initial_capital,
+                  0
+                );
+                const totalReturnPct =
+                  totalInitial !== 0
+                    ? (totalPnl / totalInitial) * 100
+                    : 0;
+                const isProfit = totalPnl >= 0;
+
+                const numSims = batch.simulations.length;
+                const startTs = Math.min(
+                  ...batch.simulations.map((s) =>
+                    new Date(s.start_date).getTime()
+                  )
+                );
+                const endTs = Math.max(
+                  ...batch.simulations.map((s) =>
+                    new Date(s.end_date).getTime()
+                  )
+                );
+                const periodStart = new Date(startTs);
+                const periodEnd = new Date(endTs);
+
+                return (
+                  <Card
+                    key={batch.batch_group_id}
+                    className="glass-card border-white/5 bg-[#111827]/90 hover:border-white/10 transition-all duration-200 cursor-pointer group overflow-hidden rounded-2xl"
+                    onClick={() => handleOpenBatch(batch)}
+                  >
+                    <div
+                      className={`h-[3px] ${
+                        isProfit ? "bg-emerald-500" : "bg-red-500"
+                      } rounded-t-2xl`}
+                    />
+                    <CardContent className="p-5">
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex items-center gap-2">
+                          <div>{getAssetIcon()}</div>
+                          <div>
+                            <h3 className="font-semibold text-gray-100 group-hover:text-emerald-400 transition-colors flex items-center gap-2">
+                              {title}
+                              <Badge
+                                variant="outline"
+                                className="text-[10px] bg-emerald-500/10 text-emerald-300 border-emerald-500/30"
+                              >
+                                Batch • {numSims} sims
+                              </Badge>
+                            </h3>
+                            {subtitle && (
+                              <p className="text-xs text-gray-500">
+                                {subtitle}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Botón eliminar batch */}
+                        <button
+                          className="text-gray-500 hover:text-red-400 transition-colors rounded-full p-1 hover:bg-red-500/10"
+                          onClick={(e) => handleAskDeleteBatch(batch, e)}
+                          aria-label="Delete batch"
+                        >
+                          <X className="w-4 h-4" strokeWidth={1.8} />
+                        </button>
                       </div>
-                      <div className="flex items-center gap-1">
-                        <DollarSign className="w-3 h-3" strokeWidth={2} />
-                        ${simulation.initial_capital.toLocaleString()}
+
+                      <div className="space-y-2 mb-4 text-sm">
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-400">Total P&amp;L</span>
+                          <span
+                            className={`font-semibold ${
+                              isProfit ? "text-green-400" : "text-red-400"
+                            }`}
+                          >
+                            {isProfit ? (
+                              <TrendingUp
+                                className="w-3 h-3 inline mr-1"
+                                strokeWidth={2}
+                              />
+                            ) : (
+                              <TrendingDown
+                                className="w-3 h-3 inline mr-1"
+                                strokeWidth={2}
+                              />
+                            )}
+                            {isProfit ? "+" : "-"}$
+                            {Math.abs(totalPnl).toFixed(2)}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-400">
+                            Total return (agg.)
+                          </span>
+                          <Badge
+                            variant="outline"
+                            className={
+                              isProfit
+                                ? "bg-green-500/10 text-green-400 border-green-500/30"
+                                : "bg-red-500/10 text-red-400 border-red-500/30"
+                            }
+                          >
+                            {isProfit ? "+" : "-"}
+                            {Math.abs(totalReturnPct).toFixed(2)}%
+                          </Badge>
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-400">Period</span>
+                          <span className="text-xs text-gray-300">
+                            {format(periodStart, "yyyy/MM/dd")} -{" "}
+                            {format(periodEnd, "yyyy/MM/dd")}
+                          </span>
+                        </div>
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
+
+                      <div className="pt-3 border-t border-white/5 flex items-center justify-between text-xs text-gray-500">
+                        <div className="flex items-center gap-1">
+                          <Calendar className="w-3 h-3" strokeWidth={2} />
+                          {format(
+                            new Date(batch.created_at),
+                            "MMM d, yyyy"
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <DollarSign className="w-3 h-3" strokeWidth={2} />
+                          $
+                          {totalInitial.toLocaleString(undefined, {
+                            maximumFractionDigits: 0,
+                          })}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              }
             })}
           </div>
         ) : (
@@ -367,88 +665,183 @@ export default function History() {
             <div className="grid grid-cols-5 px-4 py-2 text-sm font-semibold text-gray-300 border-b border-white/10 bg-black/20">
               <span>Created</span>
               <span>Period</span>
-              <span>Asset / Algo</span>
+              <span>Asset / Algo / Batch</span>
               <span className="text-right">Initial</span>
               <span className="text-right">P&amp;L</span>
             </div>
 
             {/* Rows */}
-            {processedSimulations.map((simulation: Simulation) => {
-              const isProfit = simulation.profit_loss >= 0;
+            {processedItems.map((item) => {
+              if (item.kind === "single") {
+                const sim = item.sim;
+                const isProfit = sim.profit_loss >= 0;
 
-              return (
-                <button
-                  key={simulation.id}
-                  onClick={() => handleOpenSimulation(simulation.id)}
-                  className="w-full grid grid-cols-5 px-4 py-2 text-sm text-gray-200 hover:bg-white/5 transition"
-                >
-                  {/* Fecha de creación */}
-                  <span className="text-left">
-                    {format(
-                      new Date(simulation.created_at),
-                      "yyyy-MM-dd"
-                    )}
-                  </span>
-
-                  {/* Periodo yyyy/MM/dd - yyyy/MM/dd */}
-                  <span className="text-left">
-                    {format(
-                      new Date(simulation.start_date),
-                      "yyyy/MM/dd"
-                    )}{" "}
-                    -{" "}
-                    {format(
-                      new Date(simulation.end_date),
-                      "yyyy/MM/dd"
-                    )}
-                  </span>
-
-                  {/* Asset / Algo */}
-                  <span className="text-left">
-                    <span className="block font-medium text-gray-100">
-                      {simulation.asset}
-                    </span>
-                    <span className="block text-xs text-gray-500">
-                      {simulation.algorithm.replace(/_/g, " ")}
-                    </span>
-                  </span>
-
-                  {/* Capital inicial */}
-                  <span className="text-right text-gray-200">
-                    ${simulation.initial_capital.toLocaleString()}
-                  </span>
-
-                  {/* P&L */}
-                  <span
-                    className={`text-right font-semibold ${
-                      isProfit ? "text-green-400" : "text-red-400"
-                    }`}
+                return (
+                  <button
+                    key={sim.id}
+                    onClick={() => handleOpenSingle(sim.id)}
+                    className="w-full grid grid-cols-5 px-4 py-2 text-sm text-gray-200 hover:bg:white/5 hover:bg-white/5 transition"
                   >
-                    {isProfit ? "+" : "-"}$
-                    {Math.abs(simulation.profit_loss).toFixed(2)}
-                  </span>
-                </button>
-              );
+                    {/* Fecha de creación */}
+                    <span className="text-left">
+                      {format(
+                        new Date(sim.created_at),
+                        "yyyy-MM-dd"
+                      )}
+                    </span>
+
+                    {/* Periodo */}
+                    <span className="text-left">
+                      {format(
+                        new Date(sim.start_date),
+                        "yyyy/MM/dd"
+                      )}{" "}
+                      -{" "}
+                      {format(
+                        new Date(sim.end_date),
+                        "yyyy/MM/dd"
+                      )}
+                    </span>
+
+                    {/* Asset / Algo */}
+                    <span className="text-left">
+                      <span className="block font-medium text-gray-100">
+                        {sim.asset}
+                      </span>
+                      <span className="block text-xs text-gray-500">
+                        {sim.algorithm.replace(/_/g, " ")}
+                      </span>
+                    </span>
+
+                    {/* Capital inicial */}
+                    <span className="text-right text-gray-200">
+                      ${sim.initial_capital.toLocaleString()}
+                    </span>
+
+                    {/* P&L */}
+                    <span
+                      className={`text-right font-semibold ${
+                        isProfit ? "text-green-400" : "text-red-400"
+                      }`}
+                    >
+                      {isProfit ? "+" : "-"}$
+                      {Math.abs(sim.profit_loss).toFixed(2)}
+                    </span>
+                  </button>
+                );
+              } else {
+                const batch = item;
+                const { title, subtitle } = getBatchLabels(batch);
+                const totalPnl = getItemProfitLoss(batch);
+                const totalInitial = batch.simulations.reduce(
+                  (sum, s) => sum + s.initial_capital,
+                  0
+                );
+                const isProfit = totalPnl >= 0;
+                const numSims = batch.simulations.length;
+
+                const startTs = Math.min(
+                  ...batch.simulations.map((s) =>
+                    new Date(s.start_date).getTime()
+                  )
+                );
+                const endTs = Math.max(
+                  ...batch.simulations.map((s) =>
+                    new Date(s.end_date).getTime()
+                  )
+                );
+                const periodStart = new Date(startTs);
+                const periodEnd = new Date(endTs);
+
+                return (
+                  <button
+                    key={batch.batch_group_id}
+                    onClick={() => handleOpenBatch(batch)}
+                    className="w-full grid grid-cols-5 px-4 py-2 text-sm text-gray-200 hover:bg-white/5 transition"
+                  >
+                    <span className="text-left">
+                      {format(
+                        new Date(batch.created_at),
+                        "yyyy-MM-dd"
+                      )}
+                    </span>
+
+                    <span className="text-left">
+                      {format(periodStart, "yyyy/MM/dd")} -{" "}
+                      {format(periodEnd, "yyyy/MM/dd")}
+                    </span>
+
+                    <span className="text-left">
+                      <span className="block font-medium text-gray-100">
+                        {title}
+                      </span>
+                      <span className="block text-xs text-gray-500">
+                        Batch • {numSims} sims
+                        {subtitle ? ` · ${subtitle}` : ""}
+                      </span>
+                    </span>
+
+                    <span className="text-right text-gray-200">
+                      $
+                      {totalInitial.toLocaleString(undefined, {
+                        maximumFractionDigits: 0,
+                      })}
+                    </span>
+
+                    <span
+                      className={`text-right font-semibold ${
+                        isProfit ? "text-green-400" : "text-red-400"
+                      }`}
+                    >
+                      {isProfit ? "+" : "-"}$
+                      {Math.abs(totalPnl).toFixed(2)}
+                    </span>
+                  </button>
+                );
+              }
             })}
           </div>
         )}
       </div>
 
-      {/* Modal de confirmación de borrado */}
-      {simToDelete && (
+      {/* Modal de confirmación de borrado (single o batch) */}
+      {itemToDelete && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
           <div className="bg-[#020617] border border-white/10 rounded-2xl shadow-2xl w-full max-w-sm p-6">
             <h2 className="text-lg font-semibold text-gray-100 mb-2">
-              Delete simulation
+              {itemToDelete.kind === "single"
+                ? "Delete simulation"
+                : "Delete batch"}
             </h2>
-            <p className="text-sm text-gray-300 mb-4">
-              Are you sure you want to delete this simulation for{" "}
-              <span className="font-semibold">{simToDelete.asset}</span>?
-              <br />
-              <span className="text-red-400">
-                This action cannot be undone.
-              </span>
-            </p>
+
+            {itemToDelete.kind === "single" ? (
+              <p className="text-sm text-gray-300 mb-4">
+                Are you sure you want to delete this simulation for{" "}
+                <span className="font-semibold">
+                  {itemToDelete.sim.asset}
+                </span>{" "}
+                (
+                {itemToDelete.sim.algorithm.replace(/_/g, " ")}
+                )?
+                <br />
+                <span className="text-red-400">
+                  This action cannot be undone.
+                </span>
+              </p>
+            ) : (
+              <p className="text-sm text-gray-300 mb-4">
+                Are you sure you want to delete this batch with{" "}
+                <span className="font-semibold">
+                  {itemToDelete.simulations.length} simulations
+                </span>
+                ?
+                <br />
+                <span className="text-red-400">
+                  All simulations in this batch will be removed. This
+                  action cannot be undone.
+                </span>
+              </p>
+            )}
 
             <div className="flex justify-end gap-3">
               <button

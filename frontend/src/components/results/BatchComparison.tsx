@@ -42,10 +42,46 @@ const COLORS = [
   "#06b6d4",
 ]
 
+// Helper para formatear el nombre del algoritmo
+const formatAlgo = (algo: string) =>
+  algo
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (l) => l.toUpperCase())
+
 export default function BatchComparison({
   simulations,
   batchName,
 }: BatchComparisonProps) {
+  // Contamos cuántos activos y cuántos algoritmos distintos hay en el batch
+  const assetNames = simulations.map((s) => s.asset_name ?? "")
+  const algoNames = simulations.map((s) => s.algorithm)
+
+  const uniqueAssetCount = new Set(assetNames).size
+  const uniqueAlgoCount = new Set(algoNames).size
+
+  // Etiqueta “inteligente”:
+  // - Si es mismo activo + varios algoritmos -> mostramos el algoritmo
+  // - Si son varios activos + mismo algoritmo -> mostramos el activo
+  // - Si hay mezcla -> Activo · Algoritmo
+  const getSeriesLabel = (sim: SimulationForBatch): string => {
+    const algoLabel = formatAlgo(sim.algorithm)
+    const assetLabel = sim.asset_name ?? ""
+
+    if (uniqueAssetCount === 1 && uniqueAlgoCount > 1) {
+      // Multi-algoritmo, mismo asset
+      return algoLabel
+    }
+
+    if (uniqueAssetCount > 1 && uniqueAlgoCount === 1) {
+      // Multi-asset, mismo algoritmo
+      return assetLabel || algoLabel
+    }
+
+    // Mezcla de ambos o sin asset_name
+    return assetLabel ? `${assetLabel} · ${algoLabel}` : algoLabel
+  }
+
+  // Datos para el gráfico de equity: usamos la curva de la primera simulación como base de fechas
   const equityData =
     simulations.length > 0
       ? simulations[0].equity_curve.map((point, index) => {
@@ -53,8 +89,7 @@ export default function BatchComparison({
             date: point.date,
           }
           simulations.forEach((sim) => {
-            const label =
-              sim.asset_name || sim.algorithm.replace(/_/g, " ")
+            const label = getSeriesLabel(sim)
             dataPoint[label] = sim.equity_curve[index]
               ? sim.equity_curve[index].value
               : 0
@@ -63,8 +98,9 @@ export default function BatchComparison({
         })
       : []
 
+  // Datos para las comparativas de barras
   const metricsData = simulations.map((sim) => ({
-    name: sim.asset_name || sim.algorithm.replace(/_/g, " "),
+    name: getSeriesLabel(sim),
     profitLoss: sim.profit_loss,
     accuracy: sim.accuracy,
     sharpeRatio: sim.sharpe_ratio,
@@ -111,15 +147,15 @@ export default function BatchComparison({
         <CardContent className="p-6">
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             {simulations.map((sim, index) => {
-              const label =
-                sim.asset_name || sim.algorithm.replace(/_/g, " ")
+              const label = getSeriesLabel(sim)
+              const assetLabel = sim.asset_name
               const isProfit = sim.profit_loss >= 0
               return (
                 <div
-                  key={index}
+                  key={`${label}-${index}`}
                   className="bg-white/5 rounded-xl p-4 border border-white/10"
                 >
-                  <div className="flex items-center gap-2 mb-3">
+                  <div className="flex items-center gap-2 mb-1">
                     <div
                       className="w-3 h-3 rounded-full"
                       style={{
@@ -127,10 +163,15 @@ export default function BatchComparison({
                           COLORS[index % COLORS.length],
                       }}
                     />
-                    <p className="text-xs text-gray-400 font-medium truncate">
+                    <p className="text-xs text-gray-200 font-semibold truncate">
                       {label}
                     </p>
                   </div>
+                  {assetLabel && (
+                    <p className="text-[11px] text-gray-500 mb-2">
+                      {assetLabel}
+                    </p>
+                  )}
                   <p
                     className={`text-2xl font-bold ${
                       isProfit ? "text-green-400" : "text-red-400"
@@ -184,13 +225,13 @@ export default function BatchComparison({
                 iconType="line"
               />
               {simulations.map((sim, index) => {
-                const label =
-                  sim.asset_name || sim.algorithm.replace(/_/g, " ")
+                const label = getSeriesLabel(sim)
                 return (
                   <Line
-                    key={label}
+                    key={`${label}-${index}`}
                     type="monotone"
                     dataKey={label}
+                    name={label}
                     stroke={COLORS[index % COLORS.length]}
                     strokeWidth={2}
                     dot={false}

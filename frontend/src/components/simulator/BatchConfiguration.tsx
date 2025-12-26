@@ -18,6 +18,7 @@ import {
   BarChart3,
   Landmark,
   DollarSign,
+  Coins,
 } from "lucide-react";
 import AlgorithmSelector, {
   AlgoParams,
@@ -63,6 +64,7 @@ const CATEGORY_LABELS: Record<AssetCategoryKey, string> = {
   crypto: "Crypto",
   etf: "ETF",
   commodities: "Commodities",
+  forex: "Forex",
   index: "Index",
 };
 
@@ -71,6 +73,7 @@ const CATEGORY_ICONS: Record<AssetCategoryKey, React.ElementType> = {
   crypto: Bitcoin,
   etf: BarChart3,
   commodities: Landmark,
+  forex: Coins,
   index: DollarSign,
 };
 
@@ -79,6 +82,7 @@ const CATEGORY_KEYS: AssetCategoryKey[] = [
   "crypto",
   "etf",
   "commodities",
+  "forex",
   "index",
 ];
 
@@ -95,6 +99,7 @@ function mapAssetTypeToCategory(
   if (t === "crypto" || t === "cryptocurrency") return "crypto";
   if (t === "etf" || t === "fund") return "etf";
   if (t === "commodity" || t === "commodities") return "commodities";
+  if (t === "forex" || t === "forex") return "forex";
   if (t === "index" || t === "indices") return "index";
   return null;
 }

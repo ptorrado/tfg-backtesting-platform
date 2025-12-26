@@ -7,7 +7,7 @@ services:
       POSTGRES_PASSWORD: backtest
       POSTGRES_DB: backtest_lab
     ports:
-      - "5433:5432"   # <-- ANTES era 5432:5432, cámbialo a 5433:5432
+      - "5433:5432"
     volumes:
       - backtest_pgdata:/var/lib/postgresql/data
     restart: unless-stopped

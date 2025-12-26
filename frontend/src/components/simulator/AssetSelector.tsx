@@ -9,13 +9,14 @@ import {
   Landmark,
   DollarSign,
   ChevronDown,
+  Coins,
   Check,
 } from "lucide-react";
 
 import { Card, CardHeader, CardTitle, CardContent } from "../ui/card";
 import { Asset, listAssets } from "../../api/assets";
 
-export type AssetCategoryKey = "stocks" | "crypto" | "etf" | "commodities" | "index";
+export type AssetCategoryKey = "stocks" | "crypto" | "etf" | "commodities" | "forex" | "index";
 
 type AssetCategory = {
   key: AssetCategoryKey;
@@ -28,6 +29,7 @@ const ASSET_CATEGORIES: AssetCategory[] = [
   { key: "crypto",      label: "Crypto",      icon: Bitcoin },
   { key: "etf",         label: "ETF",         icon: BarChart3 },
   { key: "commodities", label: "Commodities", icon: Landmark },
+  { key: "forex", label: "Forex", icon: Coins },
   { key: "index",       label: "Index",       icon: DollarSign },
 ];
 
@@ -53,6 +55,7 @@ function mapAssetTypeToCategory(assetType: string): AssetCategoryKey | null {
   if (t === "crypto" || t === "cryptocurrency") return "crypto";
   if (t === "etf" || t === "fund") return "etf";
   if (t === "commodity" || t === "commodities") return "commodities";
+  if (t === "forex" || t === "forex") return "forex";
   if (t === "index" || t === "indices") return "index";
   return null;
 }

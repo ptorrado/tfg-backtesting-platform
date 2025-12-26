@@ -8,6 +8,8 @@ from sqlalchemy.orm import Session
 from .algorithms.sma_crossover import run_sma_crossover
 from .algorithms.omniscient_benchmark import run_omniscient_benchmark
 from .algorithms.rsi_reversion import run_rsi_reversion
+from .algorithms.buy_and_hold import run_buy_and_hold
+
 
 AlgorithmFn = Callable[
     [Session, str, date, date, float, Dict[str, Any]],
@@ -15,6 +17,17 @@ AlgorithmFn = Callable[
 ]
 
 ALGORITHMS: Dict[str, Dict[str, Any]] = {
+    "buy_and_hold": {
+        "id": "buy_and_hold",
+        "name": "Buy & Hold",
+        "category": "Baseline",
+        "description": (
+            "Buys the asset at the first available bar in the period and "
+            "holds it until the end date without rebalancing."
+        ),
+        "params": [],  # sin parámetros
+        "fn": run_buy_and_hold,
+    },
     "sma_crossover": {
         "id": "sma_crossover",
         "name": "SMA Crossover",
