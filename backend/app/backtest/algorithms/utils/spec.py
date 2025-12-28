@@ -8,7 +8,9 @@ from sqlalchemy.orm import Session
 from datetime import date
 
 
-AlgorithmFn = Callable[[Session, str, date, date, float, Dict[str, Any]], Dict[str, Any]]
+AlgorithmFn = Callable[
+    [Session, str, date, date, float, Dict[str, Any]], Dict[str, Any]
+]
 
 
 @dataclass(frozen=True)

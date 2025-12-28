@@ -20,7 +20,6 @@ from app.backtest.common import (
 from .utils.spec import AlgorithmSpec, ParamDef
 
 
-
 def run_sma_crossover(
     db: Session,
     asset_symbol: str,
@@ -41,7 +40,9 @@ def run_sma_crossover(
         import backtrader as bt  # type: ignore
         import pandas as pd  # type: ignore
     except ImportError as exc:  # pragma: no cover
-        raise RuntimeError("backtrader and pandas must be installed to use 'sma_crossover'") from exc
+        raise RuntimeError(
+            "backtrader and pandas must be installed to use 'sma_crossover'"
+        ) from exc
 
     short_window = int(params.get("short_window", 20))
     long_window = int(params.get("long_window", 50))
@@ -89,8 +90,12 @@ def run_sma_crossover(
         )
 
         def __init__(self):
-            self.sma_fast = bt.indicators.SimpleMovingAverage(self.data.close, period=self.p.short_window)
-            self.sma_slow = bt.indicators.SimpleMovingAverage(self.data.close, period=self.p.long_window)
+            self.sma_fast = bt.indicators.SimpleMovingAverage(
+                self.data.close, period=self.p.short_window
+            )
+            self.sma_slow = bt.indicators.SimpleMovingAverage(
+                self.data.close, period=self.p.long_window
+            )
 
             self.entry_price: float = 0.0
             self.trades_log: List[Trade] = []
@@ -104,7 +109,11 @@ def run_sma_crossover(
             price = float(self.data.close[0])
 
             if len(self.data) < self.p.long_window:
-                self.equity_curve.append(EquityPoint(date=dt.isoformat(), equity=float(self.broker.getvalue())))
+                self.equity_curve.append(
+                    EquityPoint(
+                        date=dt.isoformat(), equity=float(self.broker.getvalue())
+                    )
+                )
                 return
 
             if not self.position:
@@ -115,7 +124,13 @@ def run_sma_crossover(
                         self.buy(size=size)
                         self.entry_price = price
                         self.trades_log.append(
-                            Trade(date=dt.isoformat(), type="buy", price=price, quantity=size, profit_loss=0.0)
+                            Trade(
+                                date=dt.isoformat(),
+                                type="buy",
+                                price=price,
+                                quantity=size,
+                                profit_loss=0.0,
+                            )
                         )
             else:
                 if self.sma_fast[0] < self.sma_slow[0]:
@@ -123,18 +138,30 @@ def run_sma_crossover(
                     pnl = (price - self.entry_price) * size
                     self.sell(size=size)
                     self.trades_log.append(
-                        Trade(date=dt.isoformat(), type="sell", price=price, quantity=size, profit_loss=pnl)
+                        Trade(
+                            date=dt.isoformat(),
+                            type="sell",
+                            price=price,
+                            quantity=size,
+                            profit_loss=pnl,
+                        )
                     )
                     self.entry_price = 0.0
 
-            self.equity_curve.append(EquityPoint(date=dt.isoformat(), equity=float(self.broker.getvalue())))
+            self.equity_curve.append(
+                EquityPoint(date=dt.isoformat(), equity=float(self.broker.getvalue()))
+            )
 
     cerebro.addstrategy(SmaCrossoverBT)
     strat: SmaCrossoverBT = cerebro.run()[0]
 
-    equity_curve = strat.equity_curve or [EquityPoint(date=start_date.isoformat(), equity=float(initial_capital))]
+    equity_curve = strat.equity_curve or [
+        EquityPoint(date=start_date.isoformat(), equity=float(initial_capital))
+    ]
     final_equity = float(equity_curve[-1].equity)
-    total_return = final_equity / float(initial_capital) - 1.0 if initial_capital != 0 else 0.0
+    total_return = (
+        final_equity / float(initial_capital) - 1.0 if initial_capital != 0 else 0.0
+    )
 
     max_dd = compute_max_drawdown(equity_curve)
     sharpe = compute_sharpe(equity_curve)
@@ -157,7 +184,9 @@ def run_sma_crossover(
         "total_return": float(total_return),
         "max_drawdown": float(max_dd),
         "sharpe_ratio": float(sharpe),
-        "equity_curve": [{"date": p.date, "equity": float(p.equity)} for p in equity_curve],
+        "equity_curve": [
+            {"date": p.date, "equity": float(p.equity)} for p in equity_curve
+        ],
         "trades": [
             {
                 "date": t.date,
@@ -185,14 +214,20 @@ ALGORITHM = AlgorithmSpec(
             name="short_window",
             label="Fast SMA window",
             type="int",
-            min=5, max=50, step=1, default=20,
+            min=5,
+            max=50,
+            step=1,
+            default=20,
             description="Number of days for the fast moving average.",
         ),
         ParamDef(
             name="long_window",
             label="Slow SMA window",
             type="int",
-            min=20, max=200, step=1, default=50,
+            min=20,
+            max=200,
+            step=1,
+            default=50,
             description="Number of days for the slow moving average.",
         ),
     ],

@@ -6,7 +6,11 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from app.db import get_db
-from app.schemas.simulations import SimulationDetail, SimulationRequest, SimulationSummary
+from app.schemas.simulations import (
+    SimulationDetail,
+    SimulationRequest,
+    SimulationSummary,
+)
 from app.services.simulation_service import (
     delete_simulation,
     get_simulation_detail,
@@ -18,7 +22,9 @@ router = APIRouter(prefix="/simulations", tags=["simulations"])
 
 
 @router.post("/run", response_model=SimulationDetail)
-def run_simulation(payload: SimulationRequest, db: Session = Depends(get_db)) -> SimulationDetail:
+def run_simulation(
+    payload: SimulationRequest, db: Session = Depends(get_db)
+) -> SimulationDetail:
     return run_and_store_simulation(db, payload)
 
 

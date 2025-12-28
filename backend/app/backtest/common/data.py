@@ -38,7 +38,9 @@ def load_ohlcv_from_db(
     )
 
     if not rows:
-        raise ValueError(f"No OHLCV data for '{asset_symbol}' between {start} and {end}")
+        raise ValueError(
+            f"No OHLCV data for '{asset_symbol}' between {start} and {end}"
+        )
 
     return [
         Candle(
@@ -57,7 +59,9 @@ def get_asset_meta(db: Session, *, asset_symbol: str) -> Tuple[str, str]:
     """
     Returns (asset_name, asset_type). Falls back to (symbol, "stock") if not found.
     """
-    asset_row = db.query(models.Asset).filter(models.Asset.symbol == asset_symbol).first()
+    asset_row = (
+        db.query(models.Asset).filter(models.Asset.symbol == asset_symbol).first()
+    )
     if asset_row:
         return asset_row.name, asset_row.asset_type
     return asset_symbol, "stock"

@@ -11,6 +11,7 @@ class MarketOHLCV(Base):
     OHLCV table with composite primary key (asset_id, ts).
     Must match the existing DB schema.
     """
+
     __tablename__ = "market_ohlcv"
 
     asset_id = Column(

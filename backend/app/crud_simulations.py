@@ -38,11 +38,7 @@ def save_simulation(db: Session, data: Dict[str, Any]) -> models.Simulation:
     asset_type = data.get("asset_type", "stock")
 
     # --- Asset ---
-    asset = (
-        db.query(models.Asset)
-        .filter(models.Asset.symbol == asset_symbol)
-        .first()
-    )
+    asset = db.query(models.Asset).filter(models.Asset.symbol == asset_symbol).first()
 
     if asset is None:
         asset = models.Asset(
@@ -93,8 +89,10 @@ def save_simulation(db: Session, data: Dict[str, Any]) -> models.Simulation:
             d = p.get("date") or p.get("ts") or p.get("timestamp")
             v = p.get("equity") or p.get("value")
         else:
-            d = getattr(p, "date", None) or getattr(p, "ts", None) or getattr(
-                p, "timestamp", None
+            d = (
+                getattr(p, "date", None)
+                or getattr(p, "ts", None)
+                or getattr(p, "timestamp", None)
             )
             v = getattr(p, "equity", None) or getattr(p, "value", None)
 
@@ -124,8 +122,10 @@ def save_simulation(db: Session, data: Dict[str, Any]) -> models.Simulation:
             quantity = float(t.get("quantity", 0.0))
             profit_loss = float(t.get("profit_loss", 0.0))
         else:
-            d = getattr(t, "date", None) or getattr(t, "ts", None) or getattr(
-                t, "timestamp", None
+            d = (
+                getattr(t, "date", None)
+                or getattr(t, "ts", None)
+                or getattr(t, "timestamp", None)
             )
             typ = getattr(t, "type", "")
             price = float(getattr(t, "price", 0.0))

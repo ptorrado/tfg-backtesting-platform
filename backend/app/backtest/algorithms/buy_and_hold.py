@@ -20,7 +20,6 @@ from app.backtest.common import (
 from .utils.spec import AlgorithmSpec
 
 
-
 def run_buy_and_hold(
     db: Session,
     asset_symbol: str,
@@ -90,7 +89,9 @@ def run_buy_and_hold(
         )
 
     total_return = (
-        float(final_equity) / float(initial_capital) - 1.0 if initial_capital != 0 else 0.0
+        float(final_equity) / float(initial_capital) - 1.0
+        if initial_capital != 0
+        else 0.0
     )
     max_dd = compute_max_drawdown(equity_curve)
     sharpe = compute_sharpe(equity_curve)
@@ -111,7 +112,9 @@ def run_buy_and_hold(
         "total_return": float(total_return),
         "max_drawdown": float(max_dd),
         "sharpe_ratio": float(sharpe),
-        "equity_curve": [{"date": p.date, "equity": float(p.equity)} for p in equity_curve],
+        "equity_curve": [
+            {"date": p.date, "equity": float(p.equity)} for p in equity_curve
+        ],
         "trades": [
             {
                 "date": t.date,

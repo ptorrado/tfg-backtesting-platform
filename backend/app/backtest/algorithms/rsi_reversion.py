@@ -39,7 +39,9 @@ def run_rsi_reversion(
         import backtrader as bt  # type: ignore
         import pandas as pd  # type: ignore
     except ImportError as exc:  # pragma: no cover
-        raise RuntimeError("backtrader and pandas must be installed to use 'rsi_reversion'") from exc
+        raise RuntimeError(
+            "backtrader and pandas must be installed to use 'rsi_reversion'"
+        ) from exc
 
     rsi_period = int(params.get("rsi_period", 14))
     oversold = float(params.get("oversold", 30.0))
@@ -102,7 +104,11 @@ def run_rsi_reversion(
             price = float(self.data.close[0])
 
             if len(self.data) < self.p.rsi_period:
-                self.equity_curve.append(EquityPoint(date=dt.isoformat(), equity=float(self.broker.getvalue())))
+                self.equity_curve.append(
+                    EquityPoint(
+                        date=dt.isoformat(), equity=float(self.broker.getvalue())
+                    )
+                )
                 return
 
             rsi_value = float(self.rsi[0])
@@ -115,7 +121,13 @@ def run_rsi_reversion(
                         self.buy(size=size)
                         self.entry_price = price
                         self.trades_log.append(
-                            Trade(date=dt.isoformat(), type="buy", price=price, quantity=size, profit_loss=0.0)
+                            Trade(
+                                date=dt.isoformat(),
+                                type="buy",
+                                price=price,
+                                quantity=size,
+                                profit_loss=0.0,
+                            )
                         )
             else:
                 if rsi_value > self.p.overbought:
@@ -123,18 +135,30 @@ def run_rsi_reversion(
                     pnl = (price - self.entry_price) * size
                     self.sell(size=size)
                     self.trades_log.append(
-                        Trade(date=dt.isoformat(), type="sell", price=price, quantity=size, profit_loss=pnl)
+                        Trade(
+                            date=dt.isoformat(),
+                            type="sell",
+                            price=price,
+                            quantity=size,
+                            profit_loss=pnl,
+                        )
                     )
                     self.entry_price = 0.0
 
-            self.equity_curve.append(EquityPoint(date=dt.isoformat(), equity=float(self.broker.getvalue())))
+            self.equity_curve.append(
+                EquityPoint(date=dt.isoformat(), equity=float(self.broker.getvalue()))
+            )
 
     cerebro.addstrategy(RSIMeanReversionBT)
     strat: RSIMeanReversionBT = cerebro.run()[0]
 
-    equity_curve = strat.equity_curve or [EquityPoint(date=start_date.isoformat(), equity=float(initial_capital))]
+    equity_curve = strat.equity_curve or [
+        EquityPoint(date=start_date.isoformat(), equity=float(initial_capital))
+    ]
     final_equity = float(equity_curve[-1].equity)
-    total_return = final_equity / float(initial_capital) - 1.0 if initial_capital != 0 else 0.0
+    total_return = (
+        final_equity / float(initial_capital) - 1.0 if initial_capital != 0 else 0.0
+    )
 
     max_dd = compute_max_drawdown(equity_curve)
     sharpe = compute_sharpe(equity_curve)
@@ -157,7 +181,9 @@ def run_rsi_reversion(
         "total_return": float(total_return),
         "max_drawdown": float(max_dd),
         "sharpe_ratio": float(sharpe),
-        "equity_curve": [{"date": p.date, "equity": float(p.equity)} for p in equity_curve],
+        "equity_curve": [
+            {"date": p.date, "equity": float(p.equity)} for p in equity_curve
+        ],
         "trades": [
             {
                 "date": t.date,
@@ -175,19 +201,42 @@ def run_rsi_reversion(
     }
 
 
-
 ALGORITHM = AlgorithmSpec(
     id="rsi_reversion",
     name="RSI Mean Reversion",
     category="Mean-reversion",
     description="Long-only RSI strategy: buys when oversold and exits when overbought.",
     params=[
-        ParamDef(name="rsi_period", label="RSI period", type="int", min=2, max=100, step=1, default=14,
-                 description="Number of days to compute the RSI."),
-        ParamDef(name="oversold", label="Oversold level", type="float", min=5, max=50, step=1, default=30,
-                 description="RSI below which the asset is considered oversold."),
-        ParamDef(name="overbought", label="Overbought level", type="float", min=50, max=95, step=1, default=70,
-                 description="RSI above which the asset is considered overbought."),
+        ParamDef(
+            name="rsi_period",
+            label="RSI period",
+            type="int",
+            min=2,
+            max=100,
+            step=1,
+            default=14,
+            description="Number of days to compute the RSI.",
+        ),
+        ParamDef(
+            name="oversold",
+            label="Oversold level",
+            type="float",
+            min=5,
+            max=50,
+            step=1,
+            default=30,
+            description="RSI below which the asset is considered oversold.",
+        ),
+        ParamDef(
+            name="overbought",
+            label="Overbought level",
+            type="float",
+            min=50,
+            max=95,
+            step=1,
+            default=70,
+            description="RSI above which the asset is considered overbought.",
+        ),
     ],
     fn=run_rsi_reversion,
 )

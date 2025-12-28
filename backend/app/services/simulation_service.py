@@ -29,6 +29,7 @@ BENCHMARK_NAME = "Omniscient benchmark"
 # Internal helpers
 # =========================
 
+
 def _load_equity_curve(db: Session, simulation_id: int) -> List[EquityPoint]:
     rows = (
         db.query(SimulationEquityPoint)
@@ -119,7 +120,10 @@ def _build_simulation_detail(db: Session, sim: Simulation) -> SimulationDetail:
 # Public service functions
 # =========================
 
-def run_and_store_simulation(db: Session, payload: SimulationRequest) -> SimulationDetail:
+
+def run_and_store_simulation(
+    db: Session, payload: SimulationRequest
+) -> SimulationDetail:
     """
     Runs a backtest, stores the result in DB and returns the full detail.
     Also tries to compute and store an 'omniscient_benchmark' for comparison.
@@ -185,7 +189,9 @@ def list_simulations(
     direction = direction.lower().strip()
 
     if order_by not in {"created_at", "profit_loss"}:
-        raise HTTPException(status_code=400, detail="order_by must be 'created_at' or 'profit_loss'")
+        raise HTTPException(
+            status_code=400, detail="order_by must be 'created_at' or 'profit_loss'"
+        )
     if direction not in {"asc", "desc"}:
         raise HTTPException(status_code=400, detail="direction must be 'asc' or 'desc'")
 
@@ -211,7 +217,11 @@ def list_simulations(
     out: List[SimulationSummary] = []
     for sim, asset_row in rows:
         profit_loss = float(sim.final_equity) - float(sim.initial_capital)
-        profit_loss_pct = (profit_loss / float(sim.initial_capital)) * 100.0 if sim.initial_capital else 0.0
+        profit_loss_pct = (
+            (profit_loss / float(sim.initial_capital)) * 100.0
+            if sim.initial_capital
+            else 0.0
+        )
 
         out.append(
             SimulationSummary(

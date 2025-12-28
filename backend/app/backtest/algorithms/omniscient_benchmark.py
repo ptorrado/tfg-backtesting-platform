@@ -20,7 +20,6 @@ from app.backtest.common import (
 from .utils.spec import AlgorithmSpec
 
 
-
 def run_omniscient_benchmark(
     db: Session,
     asset_symbol: str,
@@ -63,26 +62,54 @@ def run_omniscient_benchmark(
                     position = qty
                     cash -= qty * price
                     entry_price = price
-                    trades.append(Trade(date=d, type="buy", price=price, quantity=qty, profit_loss=0.0))
+                    trades.append(
+                        Trade(
+                            date=d,
+                            type="buy",
+                            price=price,
+                            quantity=qty,
+                            profit_loss=0.0,
+                        )
+                    )
 
             elif position > 0.0 and next_price < price:
                 cash += position * price
                 pnl = (price - entry_price) * position
-                trades.append(Trade(date=d, type="sell", price=price, quantity=position, profit_loss=pnl))
+                trades.append(
+                    Trade(
+                        date=d,
+                        type="sell",
+                        price=price,
+                        quantity=position,
+                        profit_loss=pnl,
+                    )
+                )
                 position = 0.0
                 entry_price = 0.0
         else:
             if position > 0.0:
                 cash += position * price
                 pnl = (price - entry_price) * position
-                trades.append(Trade(date=d, type="sell", price=price, quantity=position, profit_loss=pnl))
+                trades.append(
+                    Trade(
+                        date=d,
+                        type="sell",
+                        price=price,
+                        quantity=position,
+                        profit_loss=pnl,
+                    )
+                )
                 position = 0.0
                 entry_price = 0.0
 
         equity_curve.append(EquityPoint(date=d, equity=cash + position * price))
 
-    final_equity = float(equity_curve[-1].equity) if equity_curve else float(initial_capital)
-    total_return = final_equity / float(initial_capital) - 1.0 if initial_capital != 0 else 0.0
+    final_equity = (
+        float(equity_curve[-1].equity) if equity_curve else float(initial_capital)
+    )
+    total_return = (
+        final_equity / float(initial_capital) - 1.0 if initial_capital != 0 else 0.0
+    )
 
     max_dd = compute_max_drawdown(equity_curve)
     sharpe = compute_sharpe(equity_curve)
@@ -103,7 +130,9 @@ def run_omniscient_benchmark(
         "total_return": float(total_return),
         "max_drawdown": float(max_dd),
         "sharpe_ratio": float(sharpe),
-        "equity_curve": [{"date": p.date, "equity": float(p.equity)} for p in equity_curve],
+        "equity_curve": [
+            {"date": p.date, "equity": float(p.equity)} for p in equity_curve
+        ],
         "trades": [
             {
                 "date": t.date,
