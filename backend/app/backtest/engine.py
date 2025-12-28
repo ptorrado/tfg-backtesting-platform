@@ -7,7 +7,7 @@ from typing import Any, Dict
 
 from sqlalchemy.orm import Session
 
-from .registry import get_algorithm_fn
+from .algorithms.utils.discovery import get_algorithm_fn
 
 
 def run_backtest(

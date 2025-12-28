@@ -1,23 +1,31 @@
-# app/main.py
+from __future__ import annotations
+
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.api import api_router
+from app.core.config import settings
 from app.core.health import check_db_connection
 
-app = FastAPI(title="Backtest Lab API")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
+    check_db_connection()
+    yield
+    # Shutdown (si algún día quieres cerrar cosas, aquí)
+
+
+app = FastAPI(title=settings.app_name, lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # en prod pondrás tu dominio
+    allow_origins=settings.cors_origins_list(),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-@app.on_event("startup")
-def _startup() -> None:
-    # Falla rápido si la DB no está accesible
-    check_db_connection()
 
 app.include_router(api_router)

@@ -1,68 +1,26 @@
-# app/models.py
+from __future__ import annotations
+
 from sqlalchemy import (
+    JSON,
     Column,
-    Integer,
-    String,
-    Float,
     Date,
     DateTime,
+    Float,
     ForeignKey,
-    JSON,
+    Integer,
+    String,
     text,
 )
 from sqlalchemy.orm import relationship
 
-from .db import Base
-
-
-class Asset(Base):
-    __tablename__ = "assets"
-
-    id = Column(Integer, primary_key=True, index=True)
-    symbol = Column(String, unique=True, index=True, nullable=False)
-    name = Column(String, nullable=False)
-    asset_type = Column(String, nullable=False)
-
-    ohlcv = relationship("MarketOHLCV", back_populates="asset")
-    simulations = relationship("Simulation", back_populates="asset")
-
-
-class MarketOHLCV(Base):
-    """
-    Debe coincidir EXACTAMENTE con la tabla market_ohlcv que creaste
-    al hacer la hypertable en TimescaleDB.
-
-    Clave primaria compuesta: (asset_id, ts)
-    SIN columnas id ni timeframe.
-    """
-    __tablename__ = "market_ohlcv"
-
-    asset_id = Column(
-        Integer,
-        ForeignKey("assets.id"),
-        primary_key=True,
-        index=True,
-        nullable=False,
-    )
-    ts = Column(
-        DateTime(timezone=True),
-        primary_key=True,
-        index=True,
-        nullable=False,
-    )
-    open = Column(Float, nullable=False)
-    high = Column(Float, nullable=False)
-    low = Column(Float, nullable=False)
-    close = Column(Float, nullable=False)
-    volume = Column(Float, nullable=False)
-
-    asset = relationship("Asset", back_populates="ohlcv")
+from app.db import Base
 
 
 class Simulation(Base):
     __tablename__ = "simulations"
 
     id = Column(Integer, primary_key=True, index=True)
+
     asset_id = Column(Integer, ForeignKey("assets.id"), nullable=False, index=True)
     algorithm = Column(String, nullable=False)
 
@@ -87,16 +45,15 @@ class Simulation(Base):
         nullable=False,
     )
 
-    # 👇 NUEVO: información de batch (para agrupar multi-sim)
+    # Batch info (optional)
     batch_name = Column(String, nullable=True)
     batch_group_id = Column(String, nullable=True, index=True)
 
-    # 👇 parámetros usados en el backtest (modo avanzado)
+    # Params used by the strategy (optional)
     params = Column(JSON, nullable=True)
 
     asset = relationship("Asset", back_populates="simulations")
 
-    # Nuevas relaciones normalizadas
     equity_points = relationship(
         "SimulationEquityPoint",
         back_populates="simulation",
@@ -115,6 +72,7 @@ class SimulationEquityPoint(Base):
     __tablename__ = "simulation_equity_curve"
 
     id = Column(Integer, primary_key=True, index=True)
+
     simulation_id = Column(
         Integer,
         ForeignKey("simulations.id", ondelete="CASCADE"),
@@ -131,6 +89,7 @@ class SimulationTrade(Base):
     __tablename__ = "simulation_trades"
 
     id = Column(Integer, primary_key=True, index=True)
+
     simulation_id = Column(
         Integer,
         ForeignKey("simulations.id", ondelete="CASCADE"),

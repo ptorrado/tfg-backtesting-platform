@@ -7,7 +7,7 @@ from fastapi import HTTPException
 from sqlalchemy import asc, desc
 from sqlalchemy.orm import Session
 
-from app import models
+from app.models import Asset, Simulation, SimulationEquityPoint, SimulationTrade
 from app.backtest.engine import run_backtest
 from app.crud_simulations import save_simulation
 from app.schemas.simulations import (
@@ -31,9 +31,9 @@ BENCHMARK_NAME = "Omniscient benchmark"
 
 def _load_equity_curve(db: Session, simulation_id: int) -> List[EquityPoint]:
     rows = (
-        db.query(models.SimulationEquityPoint)
-        .filter(models.SimulationEquityPoint.simulation_id == simulation_id)
-        .order_by(models.SimulationEquityPoint.date.asc())
+        db.query(SimulationEquityPoint)
+        .filter(SimulationEquityPoint.simulation_id == simulation_id)
+        .order_by(SimulationEquityPoint.date.asc())
         .all()
     )
     return [EquityPoint(date=r.date.isoformat(), equity=float(r.equity)) for r in rows]
@@ -41,9 +41,9 @@ def _load_equity_curve(db: Session, simulation_id: int) -> List[EquityPoint]:
 
 def _load_trades(db: Session, simulation_id: int) -> List[Trade]:
     rows = (
-        db.query(models.SimulationTrade)
-        .filter(models.SimulationTrade.simulation_id == simulation_id)
-        .order_by(models.SimulationTrade.date.asc())
+        db.query(SimulationTrade)
+        .filter(SimulationTrade.simulation_id == simulation_id)
+        .order_by(SimulationTrade.date.asc())
         .all()
     )
     return [
@@ -58,17 +58,17 @@ def _load_trades(db: Session, simulation_id: int) -> List[Trade]:
     ]
 
 
-def _find_benchmark_for_sim(db: Session, sim: models.Simulation) -> Optional[BenchmarkMetrics]:
+def _find_benchmark_for_sim(db: Session, sim: Simulation) -> Optional[BenchmarkMetrics]:
     bench = (
-        db.query(models.Simulation)
+        db.query(Simulation)
         .filter(
-            models.Simulation.algorithm == BENCHMARK_ALGO_ID,
-            models.Simulation.asset_id == sim.asset_id,
-            models.Simulation.start_date == sim.start_date,
-            models.Simulation.end_date == sim.end_date,
-            models.Simulation.initial_capital == sim.initial_capital,
+            Simulation.algorithm == BENCHMARK_ALGO_ID,
+            Simulation.asset_id == sim.asset_id,
+            Simulation.start_date == sim.start_date,
+            Simulation.end_date == sim.end_date,
+            Simulation.initial_capital == sim.initial_capital,
         )
-        .order_by(models.Simulation.created_at.desc())
+        .order_by(Simulation.created_at.desc())
         .first()
     )
     if bench is None:
@@ -84,8 +84,8 @@ def _find_benchmark_for_sim(db: Session, sim: models.Simulation) -> Optional[Ben
     )
 
 
-def _build_simulation_detail(db: Session, sim: models.Simulation) -> SimulationDetail:
-    asset = db.query(models.Asset).filter(models.Asset.id == sim.asset_id).first()
+def _build_simulation_detail(db: Session, sim: Simulation) -> SimulationDetail:
+    asset = db.query(Asset).filter(Asset.id == sim.asset_id).first()
     if asset is None:
         raise HTTPException(status_code=500, detail="Asset not found for simulation")
 
@@ -190,18 +190,18 @@ def list_simulations(
         raise HTTPException(status_code=400, detail="direction must be 'asc' or 'desc'")
 
     query = (
-        db.query(models.Simulation, models.Asset)
-        .join(models.Asset, models.Simulation.asset_id == models.Asset.id)
-        .filter(models.Simulation.algorithm != BENCHMARK_ALGO_ID)
+        db.query(Simulation, Asset)
+        .join(Asset, Simulation.asset_id == Asset.id)
+        .filter(Simulation.algorithm != BENCHMARK_ALGO_ID)
     )
 
     if asset:
-        query = query.filter(models.Asset.symbol == asset)
+        query = query.filter(Asset.symbol == asset)
 
     expr = (
-        models.Simulation.final_equity - models.Simulation.initial_capital
+        Simulation.final_equity - Simulation.initial_capital
         if order_by == "profit_loss"
-        else models.Simulation.created_at
+        else Simulation.created_at
     )
 
     query = query.order_by(asc(expr) if direction == "asc" else desc(expr))
@@ -234,7 +234,7 @@ def list_simulations(
 
 def get_simulation_detail(db: Session, sim_id: int) -> SimulationDetail:
     """Return the full detail for a given simulation id."""
-    sim = db.query(models.Simulation).filter(models.Simulation.id == sim_id).first()
+    sim = db.query(Simulation).filter(Simulation.id == sim_id).first()
     if sim is None:
         raise HTTPException(status_code=404, detail="Simulation not found")
     return _build_simulation_detail(db, sim)
@@ -242,7 +242,7 @@ def get_simulation_detail(db: Session, sim_id: int) -> SimulationDetail:
 
 def delete_simulation(db: Session, sim_id: int) -> None:
     """Delete a simulation and its dependent rows (equity/trades) via cascade."""
-    sim = db.query(models.Simulation).filter(models.Simulation.id == sim_id).first()
+    sim = db.query(Simulation).filter(Simulation.id == sim_id).first()
     if sim is None:
         raise HTTPException(status_code=404, detail="Simulation not found")
 

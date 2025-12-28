@@ -4,7 +4,7 @@ from typing import List
 
 from fastapi import APIRouter
 
-from app.backtest.registry import list_algorithm_definitions
+from backend.app.backtest.algorithms.utils.discovery import list_algorithm_definitions
 from app.schemas.algorithms import AlgorithmInfo
 
 router = APIRouter(prefix="/algorithms", tags=["algorithms"])
