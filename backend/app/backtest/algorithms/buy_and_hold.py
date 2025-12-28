@@ -18,6 +18,7 @@ from .sma_crossover import (
 )
 
 
+
 def run_buy_and_hold(
     db: Session,
     asset_symbol: str,
