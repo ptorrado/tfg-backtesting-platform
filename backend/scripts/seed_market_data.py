@@ -11,7 +11,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.db import SessionLocal
-from app import models
+from app.models import MarketOHLCV, Asset
 
 
 # ========= HELPERS DB =========
@@ -22,8 +22,8 @@ def get_last_ts_for_asset(db: Session, asset_id: int) -> datetime | None:
     para ese asset, o None si no hay datos.
     """
     return (
-        db.query(func.max(models.MarketOHLCV.ts))
-        .filter(models.MarketOHLCV.asset_id == asset_id)
+        db.query(func.max(MarketOHLCV.ts))
+        .filter(MarketOHLCV.asset_id == asset_id)
         .scalar()
     )
 
@@ -78,7 +78,7 @@ def _ensure_single_ticker_df(df: pd.DataFrame, symbol: str) -> pd.DataFrame:
 
 # ========= LÓGICA DE ACTUALIZACIÓN =========
 
-def seed_asset_ohlcv(db: Session, asset: models.Asset) -> None:
+def seed_asset_ohlcv(db: Session, asset: Asset) -> None:
     """
     Descarga OHLCV diarios para UN asset usando su símbolo tal cual está
     en la tabla `assets` (debe coincidir con el ticker de Yahoo).
@@ -156,7 +156,7 @@ def seed_asset_ohlcv(db: Session, asset: models.Asset) -> None:
         print(f"[{symbol}] Tras limpiar NaNs no quedan filas válidas.")
         return
 
-    rows_to_insert: List[models.MarketOHLCV] = []
+    rows_to_insert: List[MarketOHLCV] = []
 
     # Iteramos de forma ESCALAR, sin usar row["col"] (que podría ser Series)
     opens = df["Open"].values
@@ -189,7 +189,7 @@ def seed_asset_ohlcv(db: Session, asset: models.Asset) -> None:
             vol = 0.0
 
         rows_to_insert.append(
-            models.MarketOHLCV(
+            MarketOHLCV(
                 asset_id=asset.id,
                 ts=ts_utc,
                 open=open_f,
@@ -218,7 +218,7 @@ def seed_asset_ohlcv(db: Session, asset: models.Asset) -> None:
 def main() -> None:
     db = SessionLocal()
     try:
-        assets: List[models.Asset] = db.query(models.Asset).all()
+        assets: List[Asset] = db.query(Asset).all()
 
         if not assets:
             print(

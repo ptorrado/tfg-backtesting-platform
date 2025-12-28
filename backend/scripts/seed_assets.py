@@ -1,11 +1,7 @@
 # app/seed_assets.py
 
 from app.db import SessionLocal
-from app import models
-
-# Activos base que queremos tener en la tabla `assets`
-# ⚠️ IMPORTANTE: el campo "symbol" debe coincidir EXACTAMENTE
-# con el ticker de Yahoo Finance (por ejemplo BTC-USD, no BTC/USD)
+from app.models import Asset
 
 ASSETS_TO_CREATE = [
     # ==== Acciones grandes (US / global) ====
@@ -109,15 +105,15 @@ def main() -> None:
             symbol = data["symbol"]
 
             existing = (
-                db.query(models.Asset)
-                .filter(models.Asset.symbol == symbol)
+                db.query(Asset)
+                .filter(Asset.symbol == symbol)
                 .first()
             )
             if existing:
                 print(f"[SKIP] {symbol} ya existe (id={existing.id})")
                 continue
 
-            asset = models.Asset(
+            asset = Asset(
                 symbol=symbol,
                 name=data["name"],
                 asset_type=data["asset_type"],
