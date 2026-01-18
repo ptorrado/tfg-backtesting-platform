@@ -58,6 +58,9 @@ export type SimulationSummary = {
   // Info de batch
   batch_name?: string | null;
   batch_group_id?: string | null;
+
+  // Parámetros personalizados (si existen)
+  params?: Record<string, number> | null;
 };
 
 // Detalle completo de una simulación (run y get_simulation)

@@ -65,35 +65,35 @@ export default function Layout({ children }: LayoutProps) {
         }
 
         body {
-          background: #0f1419;
+          background: hsl(var(--background));
           font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif;
         }
 
         .glass-card {
-          background: rgba(21, 26, 33, 0.8);
+          background: hsl(var(--card) / 0.8);
           backdrop-filter: blur(16px);
           -webkit-backdrop-filter: blur(16px);
-          border: 1px solid rgba(255, 255, 255, 0.06);
+          border: 1px solid hsl(var(--border) / 0.5);
         }
 
         .glass-sidebar {
-          background: rgba(15, 20, 25, 0.98) !important;
+          background: hsl(var(--card) / 0.98) !important;
           backdrop-filter: blur(20px);
           -webkit-backdrop-filter: blur(20px);
-          border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
+          border-right: 1px solid hsl(var(--border) / 0.5) !important;
         }
 
         [data-sidebar="sidebar"] {
-          background: rgba(15, 20, 25, 0.98) !important;
+          background: hsl(var(--card) / 0.98) !important;
         }
 
         [data-sidebar="sidebar"] * {
-          border-color: rgba(255, 255, 255, 0.08) !important;
+          border-color: hsl(var(--border) / 0.5) !important;
         }
       `}</style>
 
-      <div className="min-h-screen flex w-full bg-[#0f1419]">
-        <Sidebar className="glass-sidebar border-r border-white/8 !bg-[#0f1419]">
+      <div className="min-h-screen flex w-full bg-background">
+        <Sidebar className="glass-sidebar border-r border-border !bg-background sticky top-0 h-screen z-30">
           <SidebarCloseButton />
 
           <SidebarHeader className="border-b border-white/8 p-6">
@@ -121,11 +121,10 @@ export default function Layout({ children }: LayoutProps) {
                     <SidebarMenuItem key={item.title}>
                       <SidebarMenuButton
                         asChild
-                        className={`transition-all duration-200 rounded-xl mb-1 ${
-                          location.pathname === item.url
-                            ? "bg-white/15 text-white border border-white/30"
-                            : "text-gray-400 hover:text-gray-200 hover:bg-white/5"
-                        }`}
+                        className={`transition-all duration-200 rounded-xl mb-1 ${location.pathname === item.url
+                          ? "bg-white/15 text-white border border-white/30"
+                          : "text-gray-400 hover:text-gray-200 hover:bg-white/5"
+                          }`}
                       >
                         <Link
                           to={item.url}
@@ -144,7 +143,7 @@ export default function Layout({ children }: LayoutProps) {
             </SidebarGroup>
           </SidebarContent>
 
-          <SidebarFooter className="border-t border-white/8 p-4">
+          <SidebarFooter className="border-t border-white/8 p-4 mt-auto">
             <div className="text-xs text-gray-500">
               <div className="flex items-center justify-between mb-1">
                 <span>Version</span>
@@ -154,7 +153,7 @@ export default function Layout({ children }: LayoutProps) {
           </SidebarFooter>
         </Sidebar>
 
-        <main className="flex-1 flex flex-col bg-[#0f1419]">
+        <main className="flex-1 flex flex-col bg-background">
           <header className="glass-card border-b border-white/5 px-6 py-4 sticky top-0 z-10">
             <div className="flex items-center gap-4">
               <SidebarTrigger className="hover:bg-white/10 p-2 rounded-xl transition-colors duration-200 text-gray-300 hover:text-gray-100">

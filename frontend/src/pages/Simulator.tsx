@@ -1,195 +1,47 @@
 // src/pages/Simulator.tsx
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React from "react";
 import { PlayCircle, Loader2 } from "lucide-react";
 
-import {
-  runSimulation as runSimulationApi,
-  SimulationRequest as ApiSimulationRequest,
-} from "../api/simulations";
-import { createPageUrl } from "../utils";
-
+import { useSimulator } from "../components/features/simulator/useSimulator";
+import AssetSelector from "../components/features/simulator/AssetSelector";
+import AlgorithmSelector from "../components/features/simulator/AlgorithmSelector";
+import ConfigPanel from "../components/features/simulator/ConfigPanel";
+import PriceChart from "../components/features/simulator/PriceChart";
+import BatchModeToggle from "../components/features/simulator/BatchModeToggle";
+import BatchConfiguration from "../components/features/simulator/BatchConfiguration";
 import { Button } from "../components/ui/button";
-import AssetSelector, {
-  AssetCategoryKey,
-} from "../components/simulator/AssetSelector";
-import AlgorithmSelector, {
-  AlgoParams,
-  MultiAlgoParams,
-} from "../components/simulator/AlgorithmSelector";
-import ConfigPanel from "../components/simulator/ConfigPanel";
-import PriceChart from "../components/simulator/PriceChart";
-import BatchModeToggle from "../components/simulator/BatchModeToggle";
-import BatchConfiguration from "../components/simulator/BatchConfiguration";
 
 const Simulator: React.FC = () => {
-  const navigate = useNavigate();
-
-  const [assetName, setAssetName] = useState<string>("");
-  const [algorithm, setAlgorithm] = useState<string>("");
-
-  const [startDate, setStartDate] = useState<string>("2023-01-01");
-  const [endDate, setEndDate] = useState<string>("2024-01-01");
-  const [initialInvestment, setInitialInvestment] = useState<number>(10000);
-  const [isRunning, setIsRunning] = useState<boolean>(false);
-
-  // Asset category (solo front, el backend no lo usa directamente)
-  const [assetType, setAssetType] = useState<AssetCategoryKey>("stocks");
-
-  // Batch mode
-  const [batchMode, setBatchMode] = useState<boolean>(false);
-  const [batchName, setBatchName] = useState<string>("");
-  const [batchType, setBatchType] = useState<"assets" | "algorithms">("assets");
-  const [selectedAssets, setSelectedAssets] = useState<string[]>([]);
-  const [selectedAlgorithms, setSelectedAlgorithms] = useState<string[]>([]);
-  const [baseAsset, setBaseAsset] = useState<string>("");
-  const [baseAlgorithm, setBaseAlgorithm] = useState<string>("");
-
-  // Advanced mode
-  const [advancedMode, setAdvancedMode] = useState<boolean>(false);
-  const [algorithmParams, setAlgorithmParams] = useState<AlgoParams>({});
-  const [multiAlgoParams, setMultiAlgoParams] = useState<MultiAlgoParams>({});
-
-  // =========================================================
-  // HANDLER PRINCIPAL
-  // =========================================================
-
-  const handleRunSimulation = async () => {
-    // --------- MODO BATCH ---------
-    if (batchMode) {
-      if (!batchName) return;
-
-      const isMultiAssetInvalid =
-        batchType === "assets" &&
-        (selectedAssets.length === 0 || !baseAlgorithm);
-      const isMultiAlgoInvalid =
-        batchType === "algorithms" &&
-        (selectedAlgorithms.length === 0 || !baseAsset);
-
-      if (isMultiAssetInvalid || isMultiAlgoInvalid) return;
-
-      setIsRunning(true);
-
-      try {
-        const payloads: ApiSimulationRequest[] = [];
-        const batchGroupId = `${Date.now()}-${Math.random()
-          .toString(36)
-          .slice(2, 8)}`;
-
-        if (batchType === "assets") {
-          const params = advancedMode
-            ? (algorithmParams as Record<string, number>)
-            : {};
-
-          selectedAssets.forEach((asset) => {
-            payloads.push({
-              mode: "batch",
-              asset,
-              algorithm: baseAlgorithm,
-              start_date: startDate,
-              end_date: endDate,
-              initial_capital: initialInvestment,
-              params,
-              batch_name: batchName,
-              batch_group_id: batchGroupId,
-            });
-          });
-        } else {
-          selectedAlgorithms.forEach((algo) => {
-            const algoParams = advancedMode
-              ? ((multiAlgoParams[algo] ?? {}) as Record<string, number>)
-              : {};
-
-            payloads.push({
-              mode: "batch",
-              asset: baseAsset,
-              algorithm: algo,
-              start_date: startDate,
-              end_date: endDate,
-              initial_capital: initialInvestment,
-              params: algoParams,
-              batch_name: batchName,
-              batch_group_id: batchGroupId,
-            });
-          });
-        }
-
-        const results = await Promise.all(payloads.map(runSimulationApi));
-        const idsParam = results.map((s) => s.id).join(",");
-        const batchNameParam = encodeURIComponent(batchName);
-
-        navigate(
-          `${createPageUrl("Results")}?ids=${idsParam}&batchName=${batchNameParam}`
-        );
-      } catch (err) {
-        console.error("Error running batch simulation", err);
-      } finally {
-        setIsRunning(false);
-      }
-
-      return;
-    }
-
-    // --------- MODO SINGLE ---------
-    if (!assetName || !algorithm || !startDate || !endDate || !initialInvestment) {
-      return;
-    }
-
-    setIsRunning(true);
-
-    try {
-      const params = advancedMode
-        ? (algorithmParams as Record<string, number>)
-        : {};
-
-      const payload: ApiSimulationRequest = {
-        mode: "single",
-        asset: assetName,
-        algorithm,
-        start_date: startDate,
-        end_date: endDate,
-        initial_capital: initialInvestment,
-        params,
-      };
-
-      const simulation = await runSimulationApi(payload);
-
-      navigate(`${createPageUrl("Results")}?id=${simulation.id}`);
-    } catch (err) {
-      console.error("Error running simulation", err);
-    } finally {
-      setIsRunning(false);
-    }
-  };
-
-  const canRunSimulation = batchMode
-    ? Boolean(batchName) &&
-      ((batchType === "assets" &&
-        selectedAssets.length >= 1 &&
-        !!baseAlgorithm) ||
-        (batchType === "algorithms" &&
-          selectedAlgorithms.length >= 1 &&
-          !!baseAsset))
-    : Boolean(
-        assetName &&
-          algorithm &&
-          startDate &&
-          endDate &&
-          initialInvestment >= 100
-      );
-
-  // =========================================================
-  // RENDER
-  // =========================================================
+  const {
+    assetName, setAssetName,
+    algorithm, setAlgorithm,
+    startDate, setStartDate,
+    endDate, setEndDate,
+    initialInvestment, setInitialInvestment,
+    isRunning,
+    assetType, setAssetType,
+    batchMode, setBatchMode,
+    batchName, setBatchName,
+    batchType, setBatchType,
+    selectedAssets, setSelectedAssets,
+    selectedAlgorithms, setSelectedAlgorithms,
+    baseAsset, setBaseAsset,
+    baseAlgorithm, setBaseAlgorithm,
+    advancedMode, setAdvancedMode,
+    algorithmParams, setAlgorithmParams,
+    multiAlgoParams, setMultiAlgoParams,
+    handleRunSimulation,
+    canRunSimulation
+  } = useSimulator();
 
   return (
-    <div className="min-h-screen bg-[#0f1419] p-4 md:p-8">
+    <div className="min-h-screen bg-background p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-100 mb-2">
+          <h1 className="text-3xl font-bold text-foreground mb-2">
             New Simulation
           </h1>
-          <p className="text-gray-400 text-sm">
+          <p className="text-muted-foreground text-sm">
             Configure parameters and backtest your trading strategy
           </p>
         </div>
@@ -226,18 +78,16 @@ const Simulator: React.FC = () => {
                 setAlgorithmParams={setAlgorithmParams}
                 multiAlgoParams={multiAlgoParams}
                 setMultiAlgoParams={setMultiAlgoParams}
-              />
-            </div>
-
-            <div className="mb-6">
-              <ConfigPanel
-                startDate={startDate}
-                setStartDate={setStartDate}
-                endDate={endDate}
-                setEndDate={setEndDate}
-                initialInvestment={initialInvestment}
-                setInitialInvestment={setInitialInvestment}
-              />
+              >
+                <ConfigPanel
+                  startDate={startDate}
+                  setStartDate={setStartDate}
+                  endDate={endDate}
+                  setEndDate={setEndDate}
+                  initialInvestment={initialInvestment}
+                  setInitialInvestment={setInitialInvestment}
+                />
+              </BatchConfiguration>
             </div>
           </>
         ) : (
@@ -291,7 +141,7 @@ const Simulator: React.FC = () => {
             onClick={handleRunSimulation}
             disabled={!canRunSimulation || isRunning}
             size="lg"
-            className="bg-white/15 hover:bg-white/20 text-white px-12 py-6 text-base font-semibold rounded-xl disabled:opacity-50 disabled:cursor-not-allowed border border-white/30"
+            className="bg-primary/20 hover:bg-primary/30 text-foreground px-12 py-6 text-base font-semibold rounded-xl disabled:opacity-50 disabled:cursor-not-allowed border border-primary/30"
           >
             {isRunning ? (
               <>

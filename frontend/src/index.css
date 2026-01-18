@@ -37,39 +37,47 @@
     --radius: 0.5rem;
   }
 
-  /* Tema oscuro: todo tirando a gris/negro, sin azules saturados */
+  /* Dark theme suited for financial dashboard (Obsidian/Slate look) */
   .dark {
-    --background: 222 28% 7%;         /* fondo principal */
-    --foreground: 213 31% 91%;
+    /* Main background: more neutral slate (less blue) */
+    --background: 222 15% 10%;
+    /* Foreground: off-white */
+    --foreground: 210 40% 98%;
 
-    --muted: 222 16% 14%;
-    --muted-foreground: 215.4 16.3% 56.9%;
+    /* Card background: matching main specific slate */
+    --card: 222 15% 12%;
+    --card-foreground: 210 40% 98%;
 
-    --popover: 222 28% 7%;
-    --popover-foreground: 215 20.2% 65.1%;
+    /* Popovers similar to cards */
+    --popover: 222 15% 12%;
+    --popover-foreground: 210 40% 98%;
 
-    --border: 222 16% 18%;
-    --input: 222 16% 18%;
-    --card: 222 28% 7%;
-    --card-foreground: 213 31% 91%;
+    /* Primary: Emerald green maintained */
+    --primary: 142 71% 45%;
+    --primary-foreground: 144 100% 97%;
 
-    /* Primario blanco (para textos/botones principales) */
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 1.2%;
-
-    /* Secundario neutro gris */
-    --secondary: 222 16% 18%;
+    /* Secondary: Muted slate */
+    --secondary: 217 15% 17%;
     --secondary-foreground: 210 40% 98%;
 
-    /* Acento neutro gris (se integra con el resto de la UI) */
-    --accent: 222 16% 18%;
+    /* Muted: for subtitles/disabled */
+    --muted: 217 15% 17%;
+    --muted-foreground: 215 15% 65%;
+
+    /* Accent: for hovers */
+    --accent: 217 15% 17%;
     --accent-foreground: 210 40% 98%;
 
-    --destructive: 0 63% 31%;
+    /* Destructive: Red */
+    --destructive: 0 84% 60%;
     --destructive-foreground: 210 40% 98%;
 
-    /* Borde / ring también neutro, sin glow azul */
-    --ring: 222 16% 18%;
+    /* Borders: darker slate */
+    --border: 217 15% 20%;
+    /* Inputs: similar to borders */
+    --input: 217 15% 20%;
+
+    --ring: 142 71% 45%;
 
     --radius: 0.75rem;
   }
@@ -87,6 +95,11 @@
     /* fuerza tema oscuro también para controles nativos */
     color-scheme: dark;
   }
+}
+
+/* Glass Card Utility */
+.glass-card {
+  @apply bg-card/30 border border-white/10 backdrop-blur-md shadow-sm;
 }
 
 /* Inputs number sin flechitas */

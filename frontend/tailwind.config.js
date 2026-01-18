@@ -49,6 +49,9 @@ module.exports = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        // Custom semantic aliases to replace hardcoded hexes
+        "app-bg": "#0f1419", // Kept for reference or backward compat if we want to use the EXACT hex as a variable
+        "card-bg": "#111827",
       },
       borderRadius: {
         lg: "var(--radius)",

@@ -1,6 +1,6 @@
 // src/components/simulator/PriceChart.tsx
 import React, { useEffect, useMemo, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "../../ui/card";
 import {
   Area,
   AreaChart,
@@ -10,8 +10,9 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { formatDate } from "../../../utils";
 import { Activity } from "lucide-react";
-import { getMarketData, MarketCandle } from "../../api/marketData";
+import { getMarketData, MarketCandle } from "../../../api/marketData";
 
 export interface PriceChartProps {
   // Aquí esperamos el símbolo tal cual está en assets.symbol (AAPL, TSLA, BTC/USD...)
@@ -24,6 +25,7 @@ export interface PriceChartProps {
 
 interface PricePoint {
   date: string;
+  originalDate?: string | number;
   price: number;
 }
 
@@ -208,6 +210,7 @@ export default function PriceChart({
             const d = new Date(c.ts);
             return {
               date: d.toLocaleDateString("en-US", dateFormatOptions),
+              originalDate: c.ts, // Store original timestamp for tooltip formatting
               price: c.close,
             };
           });
@@ -256,11 +259,13 @@ export default function PriceChart({
   }) => {
     if (active && payload && payload.length) {
       return (
-        <div className="glass-card rounded-lg p-3 border border-slate-700">
-          <p className="text-slate-400 text-xs mb-1">
-            {payload[0].payload.date}
+        <div className="glass-card rounded-lg p-3 border border-border bg-popover">
+          <p className="text-muted-foreground text-xs mb-1">
+            {payload[0].payload.originalDate
+              ? new Date(payload[0].payload.originalDate).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })
+              : payload[0].payload.date}
           </p>
-          <p className="text-slate-100 font-semibold text-base">
+          <p className="text-foreground font-semibold text-base">
             ${payload[0].value.toFixed(2)}
           </p>
         </div>
@@ -281,11 +286,11 @@ export default function PriceChart({
   };
 
   return (
-    <Card className="glass-card border-white/5">
-      <CardHeader className="border-b border-white/5 pb-4">
+    <Card className="glass-card border-border bg-card">
+      <CardHeader className="border-b border-border pb-4">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-gray-100 flex items-center gap-2 text-base font-semibold">
-            <Activity className="w-4 h-4 text-emerald-500" strokeWidth={2} />
+          <CardTitle className="text-foreground flex items-center gap-2 text-base font-semibold">
+            <Activity className="w-4 h-4 text-primary" strokeWidth={2} />
             Price Chart
           </CardTitle>
 
@@ -296,11 +301,10 @@ export default function PriceChart({
                 <button
                   key={r}
                   onClick={() => setTimeRange(r)}
-                  className={`px-2.5 py-1 rounded-full text-[11px] font-medium border transition-colors ${
-                    active
-                      ? "bg-emerald-500 text-black border-emerald-400"
-                      : "bg-black/20 text-gray-300 border-white/10 hover:border-emerald-400/60"
-                  }`}
+                  className={`px-2.5 py-1 rounded-full text-[11px] font-medium border transition-colors ${active
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "bg-muted/20 text-muted-foreground border-border hover:border-primary/60"
+                    }`}
                 >
                   {rangeLabels[r]}
                 </button>
@@ -311,23 +315,22 @@ export default function PriceChart({
       </CardHeader>
       <CardContent className="p-6">
         <div className="mb-6">
-          <p className="text-xs text-gray-400 mb-1">
+          <p className="text-xs text-muted-foreground mb-1">
             {assetName} • {startDate} → {endDate}
           </p>
 
           {loading ? (
-            <p className="text-xs text-gray-500">Loading market data...</p>
+            <p className="text-xs text-muted-foreground">Loading market data...</p>
           ) : error ? (
-            <p className="text-xs text-red-400">{error}</p>
+            <p className="text-xs text-destructive">{error}</p>
           ) : (
             <div className="flex items-baseline gap-3">
-              <p className="text-3xl font-bold text-gray-100">
+              <p className="text-3xl font-bold text-foreground">
                 ${currentPrice.toFixed(2)}
               </p>
               <p
-                className={`text-sm font-semibold ${
-                  isPositive ? "text-green-400" : "text-red-400"
-                }`}
+                className={`text-sm font-semibold ${isPositive ? "text-green-500" : "text-red-500"
+                  }`}
               >
                 {isPositive ? "+" : ""}
                 {priceChange.toFixed(2)}%
@@ -357,17 +360,17 @@ export default function PriceChart({
                   />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis
                 dataKey="date"
-                stroke="#475569"
-                tick={{ fill: "#6b7280", fontSize: 10 }}
+                stroke="hsl(var(--muted-foreground))"
+                tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }}
                 tickLine={false}
                 minTickGap={16}
               />
               <YAxis
-                stroke="#475569"
-                tick={{ fill: "#6b7280", fontSize: 10 }}
+                stroke="hsl(var(--muted-foreground))"
+                tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }}
                 tickFormatter={(value) => `$${(value as number).toFixed(0)}`}
                 tickLine={false}
               />

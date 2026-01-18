@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Card, CardHeader, CardTitle, CardContent } from "../ui/card";
+import { Card, CardHeader, CardTitle, CardContent } from "../../ui/card";
 import {
   Search,
   ChevronDown,
@@ -12,7 +12,7 @@ import {
   listAlgorithms,
   AlgorithmInfo,
   AlgoParam,
-} from "../../api/algorithms";
+} from "../../../api/algorithms";
 
 // ===== Tipos usados por el resto de la app (NO TOCAR) =====
 
@@ -92,15 +92,15 @@ const AlgorithmSelector: React.FC<AlgorithmSelectorProps> = (props) => {
   const selectedIds: string[] = isMulti
     ? (props as MultiModeProps).selectedAlgorithms
     : (props as SingleModeProps).algorithm
-    ? [(props as SingleModeProps).algorithm]
-    : [];
+      ? [(props as SingleModeProps).algorithm]
+      : [];
 
   // ---- Definición del algoritmo actual (single-mode) ----
   const currentAlgoDef: AlgorithmInfo | undefined =
     !isMulti && (props as SingleModeProps).algorithm
       ? algorithms.find(
-          (a) => a.id === (props as SingleModeProps).algorithm
-        )
+        (a) => a.id === (props as SingleModeProps).algorithm
+      )
       : undefined;
 
   // ---- Selección de algoritmo ----
@@ -144,8 +144,8 @@ const AlgorithmSelector: React.FC<AlgorithmSelectorProps> = (props) => {
     if (!algo || algo.params.length === 0) return null;
 
     return (
-      <div className="mt-4 rounded-xl border border-white/10 bg-white/5 p-4 space-y-3">
-        <div className="flex items-center gap-2 text-xs font-semibold text-gray-300 uppercase tracking-wide">
+      <div className="mt-4 rounded-xl border border-border bg-muted/20 p-4 space-y-3">
+        <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
           <SlidersHorizontal className="w-4 h-4" />
           <span>Advanced Parameters</span>
         </div>
@@ -156,7 +156,7 @@ const AlgorithmSelector: React.FC<AlgorithmSelectorProps> = (props) => {
 
           return (
             <div key={def.name} className="flex flex-col gap-1">
-              <div className="flex justify-between text-xs text-gray-400">
+              <div className="flex justify-between text-xs text-muted-foreground">
                 <span>{def.label}</span>
                 <span>
                   {value} ({def.min}–{def.max})
@@ -176,10 +176,10 @@ const AlgorithmSelector: React.FC<AlgorithmSelectorProps> = (props) => {
                       def.type === "int" ? Math.round(num) : num,
                   }));
                 }}
-                className="w-full accent-blue-400"
+                className="w-full accent-primary"
               />
               {def.description && (
-                <p className="text-[11px] text-gray-500">
+                <p className="text-[11px] text-muted-foreground">
                   {def.description}
                 </p>
               )}
@@ -217,13 +217,13 @@ const AlgorithmSelector: React.FC<AlgorithmSelectorProps> = (props) => {
 
     return (
       <div className="mt-4 space-y-4">
-        <div className="flex items-center gap-2 text-xs font-semibold text-gray-300 uppercase tracking-wide">
+        <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
           <SlidersHorizontal className="w-4 h-4" />
           <span>Algorithm Parameters</span>
         </div>
 
         {selected.length === 0 ? (
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-muted-foreground">
             Select at least one algorithm to customize its parameters.
           </p>
         ) : (
@@ -234,11 +234,11 @@ const AlgorithmSelector: React.FC<AlgorithmSelectorProps> = (props) => {
             return (
               <div
                 key={algoId}
-                className="rounded-xl border border-white/10 bg-white/5 p-3 space-y-3"
+                className="rounded-xl border border-border bg-muted/20 p-3 space-y-3"
               >
-                <div className="flex justify-between items-center text-xs font-semibold text-gray-200">
+                <div className="flex justify-between items-center text-xs font-semibold text-foreground">
                   <span>{algo.name}</span>
-                  <span className="text-[10px] text-gray-400 uppercase tracking-wider">
+                  <span className="text-[10px] text-muted-foreground uppercase tracking-wider">
                     {algo.id.replace(/_/g, " ")}
                   </span>
                 </div>
@@ -251,7 +251,7 @@ const AlgorithmSelector: React.FC<AlgorithmSelectorProps> = (props) => {
 
                   return (
                     <div key={def.name} className="flex flex-col gap-1">
-                      <div className="flex justify-between text-xs text-gray-400">
+                      <div className="flex justify-between text-xs text-muted-foreground">
                         <span>{def.label}</span>
                         <span>
                           {value} ({def.min}–{def.max})
@@ -270,10 +270,10 @@ const AlgorithmSelector: React.FC<AlgorithmSelectorProps> = (props) => {
                             Number(e.target.value)
                           )
                         }
-                        className="w-full accent-blue-400"
+                        className="w-full accent-primary"
                       />
                       {def.description && (
-                        <p className="text-[11px] text-gray-500">
+                        <p className="text-[11px] text-muted-foreground">
                           {def.description}
                         </p>
                       )}
@@ -291,25 +291,25 @@ const AlgorithmSelector: React.FC<AlgorithmSelectorProps> = (props) => {
   const multiProps = props as MultiModeProps;
 
   return (
-    <Card className="relative h-full flex flex-col rounded-2xl border border-white/10 bg-white/[0.03]">
+    <Card className="relative h-full flex flex-col rounded-2xl border border-border bg-card">
       <CardHeader className="pb-3">
-        <CardTitle className="text-sm font-semibold text-gray-100 flex items-center gap-2">
+        <CardTitle className="text-sm font-semibold text-foreground flex items-center gap-2">
           <Brain className="w-4 h-4" />
           Trading Algorithm
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4 flex-1 flex flex-col">
         <div>
-          <label className="block text-xs font-medium text-gray-400 mb-2">
+          <label className="block text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wider">
             {isMulti ? "Algorithms" : "Algorithm"}
           </label>
           <div className="relative">
-            <div className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
+            <div className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
               <Search className="w-4 h-4" />
             </div>
             <input
               type="text"
-              className="w-full bg-white/5 border border-white/10 text-gray-100 h-11 rounded-xl pl-9 pr-10 text-sm placeholder-gray-500 hover:bg-white/10 transition-colors focus:outline-none"
+              className="w-full bg-input border border-border text-foreground h-11 rounded-xl pl-9 pr-10 text-sm placeholder-muted-foreground hover:bg-accent/50 transition-colors focus:outline-none"
               placeholder={
                 isMulti
                   ? "Search & select algorithms..."
@@ -324,26 +324,25 @@ const AlgorithmSelector: React.FC<AlgorithmSelectorProps> = (props) => {
             />
             <button
               type="button"
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-200"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
               onClick={() => setOpen((o) => !o)}
             >
               <ChevronDown
-                className={`w-4 h-4 transition-transform ${
-                  open ? "rotate-180" : ""
-                }`}
+                className={`w-4 h-4 transition-transform ${open ? "rotate-180" : ""
+                  }`}
               />
             </button>
           </div>
 
           {open && (
-            <div className="mt-2 max-h-60 overflow-y-auto rounded-xl border border-white/10 bg-white/5 shadow-xl custom-scrollbar">
+            <div className="mt-2 max-h-60 overflow-y-auto rounded-xl border border-border bg-popover shadow-xl custom-scrollbar">
               {loading && (
-                <div className="px-3 py-2 text-sm text-gray-400">
+                <div className="px-3 py-2 text-sm text-muted-foreground">
                   Loading algorithms...
                 </div>
               )}
               {!loading && filteredAlgos.length === 0 && (
-                <div className="px-3 py-2 text-sm text-gray-400">
+                <div className="px-3 py-2 text-sm text-muted-foreground">
                   No algorithms found
                 </div>
               )}
@@ -355,13 +354,12 @@ const AlgorithmSelector: React.FC<AlgorithmSelectorProps> = (props) => {
                       key={algo.id}
                       type="button"
                       onClick={() => handleSelect(algo.id)}
-                      className={`w-full flex flex-col items-start px-3 py-2 text-sm text-left transition-colors hover:bg-white/10 ${
-                        selected ? "bg-white/10 text-gray-50" : "text-gray-100"
-                      }`}
+                      className={`w-full flex flex-col items-start px-3 py-2 text-sm text-left transition-colors hover:bg-accent/50 ${selected ? "bg-accent/50 text-foreground" : "text-foreground"
+                        }`}
                     >
                       <div className="flex justify-between w-full">
                         <span className="font-medium">{algo.name}</span>
-                        <span className="text-xs text-gray-400">
+                        <span className="text-xs text-muted-foreground">
                           {algo.category}
                         </span>
                       </div>
@@ -369,7 +367,7 @@ const AlgorithmSelector: React.FC<AlgorithmSelectorProps> = (props) => {
                         {algo.description}
                       </span>
                       {selected && (
-                        <div className="mt-1 text-xs text-emerald-400 flex items-center gap-1">
+                        <div className="mt-1 text-xs text-primary flex items-center gap-1">
                           <Check className="w-3 h-3" />
                           Selected
                         </div>
@@ -390,10 +388,10 @@ const AlgorithmSelector: React.FC<AlgorithmSelectorProps> = (props) => {
                     key={id}
                     type="button"
                     onClick={() => handleSelect(id)}
-                    className="inline-flex items-center gap-1 rounded-full bg-white/10 px-3 py-1 text-xs text-gray-100 border border-white/30 hover:bg-white/20"
+                    className="inline-flex items-center gap-1 rounded-full bg-accent/50 px-3 py-1 text-xs text-foreground border border-border hover:bg-accent"
                   >
                     <span>{algo?.name ?? id}</span>
-                    <span className="text-gray-300 text-sm">×</span>
+                    <span className="text-muted-foreground text-sm">×</span>
                   </button>
                 );
               })}
@@ -403,19 +401,19 @@ const AlgorithmSelector: React.FC<AlgorithmSelectorProps> = (props) => {
 
         {/* overview solo en single-mode */}
         {!isMulti && currentAlgoDef && (
-          <div className="mt-4 rounded-xl border border-white/10 bg-white/5 p-4 space-y-2">
-            <h4 className="text-xs font-semibold text-gray-300 uppercase tracking-wide">
+          <div className="mt-4 rounded-xl border border-border bg-muted/20 p-4 space-y-2">
+            <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
               Algorithm overview
             </h4>
             <div className="flex justify-between text-sm">
-              <span className="text-gray-100">
+              <span className="text-foreground">
                 {currentAlgoDef.name}
               </span>
-              <span className="text-xs text-gray-400 uppercase tracking-wider">
+              <span className="text-xs text-muted-foreground uppercase tracking-wider">
                 {currentAlgoDef.id.replace(/_/g, " ")}
               </span>
             </div>
-            <p className="text-xs text-gray-400">
+            <p className="text-xs text-muted-foreground">
               {currentAlgoDef.description}
             </p>
           </div>

@@ -9,9 +9,10 @@ import {
   XAxis,
   YAxis,
 } from "recharts"
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card"
-import { Badge } from "../ui/badge"
+import { Card, CardContent, CardHeader, CardTitle } from "../../ui/card"
+import { Badge } from "../../ui/badge"
 import { Trophy, Target } from "lucide-react"
+import { formatDate } from "../../../utils"
 
 export interface BenchmarkPoint {
   date: string
@@ -45,9 +46,9 @@ export default function BenchmarkComparison({
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
       return (
-        <div className="glass-card border border-slate-700 rounded-lg p-3">
-          <p className="text-slate-400 text-xs mb-2">
-            {payload[0].payload.date}
+        <div className="glass-card border border-border bg-popover rounded-lg p-3">
+          <p className="text-muted-foreground text-xs mb-2">
+            {formatDate(payload[0].payload.date)}
           </p>
           <div className="space-y-1">
             <p className="text-emerald-400 font-semibold text-sm">
@@ -72,14 +73,14 @@ export default function BenchmarkComparison({
     efficiencyRatio >= 80
       ? "bg-green-500/10 text-green-400 border-green-500/30"
       : efficiencyRatio >= 50
-      ? "bg-yellow-500/10 text-yellow-400 border-yellow-500/30"
-      : "bg-red-500/10 text-red-400 border-red-500/30"
+        ? "bg-yellow-500/10 text-yellow-400 border-yellow-500/30"
+        : "bg-red-500/10 text-red-400 border-red-500/30"
 
   return (
-    <Card className="glass-card border-white/5">
-      <CardHeader className="border-b border-white/5 pb-4">
+    <Card className="glass-card border-border bg-card h-full">
+      <CardHeader className="border-b border-border pb-4">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-gray-100 flex items-center gap-2 text-base font-semibold">
+          <CardTitle className="text-foreground flex items-center gap-2 text-base font-semibold">
             <Trophy
               className="w-4 h-4 text-purple-500"
               strokeWidth={2}
@@ -102,14 +103,13 @@ export default function BenchmarkComparison({
                 className="w-4 h-4 text-emerald-400"
                 strokeWidth={2}
               />
-              <p className="text-xs text-gray-400 uppercase font-medium">
+              <p className="text-xs text-muted-foreground uppercase font-medium">
                 Your Algorithm
               </p>
             </div>
             <p
-              className={`text-2xl font-bold ${
-                algorithmProfit ? "text-green-400" : "text-red-400"
-              }`}
+              className={`text-2xl font-bold ${algorithmProfit ? "text-green-400" : "text-red-400"
+                }`}
             >
               {algorithmProfit ? "+" : "-"}$
               {Math.abs(profitLoss).toFixed(2)}
@@ -122,14 +122,13 @@ export default function BenchmarkComparison({
                 className="w-4 h-4 text-purple-400"
                 strokeWidth={2}
               />
-              <p className="text-xs text-gray-400 uppercase font-medium">
+              <p className="text-xs text-muted-foreground uppercase font-medium">
                 Perfect Algorithm
               </p>
             </div>
             <p
-              className={`text-2xl font-bold ${
-                benchmarkProfit ? "text-green-400" : "text-red-400"
-              }`}
+              className={`text-2xl font-bold ${benchmarkProfit ? "text-green-400" : "text-red-400"
+                }`}
             >
               {benchmarkProfit ? "+" : "-"}$
               {Math.abs(benchmarkProfitLoss).toFixed(2)}
@@ -138,7 +137,7 @@ export default function BenchmarkComparison({
         </div>
 
         <ResponsiveContainer width="100%" height={300}>
-          <AreaChart data={combinedData}>
+          <AreaChart data={combinedData} margin={{ left: 0, right: 0, top: 10, bottom: 0 }}>
             <defs>
               <linearGradient
                 id="colorAlgorithm"
@@ -177,18 +176,23 @@ export default function BenchmarkComparison({
                 />
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
             <XAxis
               dataKey="date"
-              stroke="#475569"
-              tick={{ fill: "#6b7280", fontSize: 11 }}
+              stroke="hsl(var(--muted-foreground))"
+              tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
+              minTickGap={20}
+              tickFormatter={(value) => formatDate(value)}
             />
             <YAxis
-              stroke="#475569"
-              tick={{ fill: "#6b7280", fontSize: 11 }}
+              stroke="hsl(var(--muted-foreground))"
+              tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
               tickFormatter={(value: number) =>
                 `$${(value / 1000).toFixed(0)}k`
               }
+              width={40}
+              tickCount={6}
+              minTickGap={20}
             />
             <Tooltip content={<CustomTooltip />} />
             <Legend
@@ -215,14 +219,14 @@ export default function BenchmarkComparison({
           </AreaChart>
         </ResponsiveContainer>
 
-        <div className="mt-6 bg-white/5 rounded-xl p-4 border border-white/10">
-          <p className="text-xs text-gray-400 mb-2">
+        <div className="mt-6 bg-muted/20 rounded-xl p-4 border border-border">
+          <p className="text-xs text-muted-foreground mb-2">
             <span className="font-semibold text-purple-400">
               Perfect Algorithm
             </span>{" "}
             uses omniscient market knowledge
           </p>
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-muted-foreground">
             This theoretical benchmark always buys at local minimums
             and sells at local maximums. It represents the maximum
             possible profit from the given price movements and serves

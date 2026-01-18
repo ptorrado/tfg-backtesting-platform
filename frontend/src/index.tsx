@@ -6,6 +6,9 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 
 const queryClient = new QueryClient()
 
+// Force dark mode
+document.documentElement.classList.add("dark");
+
 const root = ReactDOM.createRoot(
   document.getElementById("root") as HTMLElement
 )

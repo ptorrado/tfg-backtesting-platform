@@ -1,5 +1,5 @@
 import React from "react"
-import { Card, CardContent } from "../ui/card"
+import { Card, CardContent } from "../../ui/card"
 import { TrendingUp, TrendingDown } from "lucide-react"
 
 export interface MetricsCardProps {
@@ -28,21 +28,21 @@ export default function MetricsCard({
     isPositive === true
       ? "text-green-400"
       : isPositive === false
-      ? "text-red-400"
-      : "text-gray-100"
+        ? "text-red-400"
+        : "text-gray-100"
 
   const iconColorClass =
     isPositive === true
       ? "text-green-400"
       : isPositive === false
-      ? "text-red-400"
-      : "text-emerald-400"
+        ? "text-red-400"
+        : "text-emerald-400"
 
   return (
-    <Card className="glass-card border-white/5">
+    <Card className="glass-card">
       <CardContent className="p-5">
         <div className="flex justify-between items-start mb-4">
-          <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center">
+          <div className="w-10 h-10 rounded-xl bg-muted/20 flex items-center justify-center">
             <Icon
               className={`w-5 h-5 ${iconColorClass}`}
               strokeWidth={2}
@@ -63,14 +63,14 @@ export default function MetricsCard({
           )}
         </div>
         <div>
-          <p className="text-xs font-medium text-gray-400 mb-1 uppercase tracking-wider">
+          <p className="text-xs font-medium text-muted-foreground mb-1 uppercase tracking-wider">
             {title}
           </p>
           <p className={`text-2xl font-bold ${colorClass}`}>
             {displayValue}
           </p>
           {subtitle && (
-            <p className="text-xs text-gray-500 mt-2">{subtitle}</p>
+            <p className="text-xs text-muted-foreground mt-2">{subtitle}</p>
           )}
         </div>
       </CardContent>

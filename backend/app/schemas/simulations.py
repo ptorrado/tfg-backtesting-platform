@@ -86,6 +86,7 @@ class SimulationSummary(BaseModel):
 
     batch_name: Optional[str] = None
     batch_group_id: Optional[str] = None
+    params: Optional[Dict[str, float]] = None
 
 
 class SimulationDetail(SimulationStored):

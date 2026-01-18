@@ -6,7 +6,7 @@ import {
   CardHeader,
   CardTitle,
   CardContent,
-} from "../ui/card";
+} from "../../ui/card";
 import {
   Search,
   ChevronDown,
@@ -27,7 +27,7 @@ import AlgorithmSelector, {
 import { AssetCategoryKey } from "./AssetSelector";
 
 import { useQuery } from "@tanstack/react-query";
-import { Asset, listAssets } from "../../api/assets";
+import { Asset, listAssets } from "../../../api/assets";
 
 type BatchType = "assets" | "algorithms";
 
@@ -57,6 +57,7 @@ export type BatchConfigurationProps = {
   setMultiAlgoParams: React.Dispatch<
     React.SetStateAction<MultiAlgoParams>
   >;
+  children?: React.ReactNode;
 };
 
 const CATEGORY_LABELS: Record<AssetCategoryKey, string> = {
@@ -220,7 +221,7 @@ const BatchConfiguration: React.FC<BatchConfigurationProps> = (
   };
 
   const renderCategoryChips = (forBaseAsset = false) => (
-    <div className="flex flex-wrap gap-3">
+    <div className="flex flex-wrap gap-2">
       {CATEGORY_KEYS.map((key) => {
         const active = key === assetType;
         const Icon = CATEGORY_ICONS[key];
@@ -232,32 +233,20 @@ const BatchConfiguration: React.FC<BatchConfigurationProps> = (
             onClick={() => {
               setAssetType(key);
               if (forBaseAsset) {
-                // Modo multi-algo: reseteamos sólo el asset base
                 setBaseAsset("");
                 setBaseAssetQuery("");
               } else {
-                // Modo multi-asset: cambiamos categoría y limpiamos búsqueda
                 setAssetQuery("");
               }
             }}
-            className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-medium border transition-all
-              ${
-                active
-                  ? "bg-white/15 border-white/60 text-gray-100 shadow-sm"
-                  : "bg-white/[0.03] border-white/10 text-gray-300 hover:bg-white/10 hover:border-white/40 hover:text-gray-100"
+            className={`flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium border transition-all
+              ${active
+                ? "bg-primary/10 border-primary/50 text-primary shadow-sm"
+                : "bg-muted/10 border-transparent text-muted-foreground hover:bg-muted/20 hover:text-foreground"
               }`}
           >
-            <Icon
-              className={`w-4 h-4 ${
-                active ? "text-gray-100" : "text-gray-400"
-              }`}
-            />
-            <span className="sm:hidden">
-              {key === "commodities" ? "Cmdty" : CATEGORY_LABELS[key]}
-            </span>
-            <span className="hidden sm:inline">
-              {CATEGORY_LABELS[key]}
-            </span>
+            <Icon className="w-3.5 h-3.5" />
+            <span>{CATEGORY_LABELS[key]}</span>
           </button>
         );
       })}
@@ -268,32 +257,32 @@ const BatchConfiguration: React.FC<BatchConfigurationProps> = (
   const renderMultiAssetSection = () => (
     <div className="space-y-6">
       {/* Asset selection block */}
-      <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-4 md:px-5 md:py-5">
-        <div className="flex items-center gap-2 text-sm font-semibold text-gray-100 mb-4">
-          <Layers className="w-4 h-4" />
+      <div className="rounded-xl border border-border bg-card/30 p-5">
+        <div className="flex items-center gap-2 text-sm font-semibold text-foreground mb-4">
+          <Layers className="w-4 h-4 text-primary" />
           <span>Asset Selection</span>
         </div>
 
         <div className="space-y-4">
           <div>
-            <p className="text-xs font-medium text-gray-400 mb-2">
-              Asset category
+            <p className="text-xs font-medium text-muted-foreground mb-3 uppercase tracking-wider">
+              Asset Category
             </p>
             {renderCategoryChips(false)}
           </div>
 
           <div>
-            <p className="text-xs font-medium text-gray-400 mb-2">
+            <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wider">
               Assets to compare
             </p>
 
-            <div className="relative">
-              <div className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
+            <div className="relative group">
+              <div className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors">
                 <Search className="w-4 h-4" />
               </div>
               <input
                 type="text"
-                className="w-full bg-white/5 border border-white/10 text-gray-100 h-11 rounded-xl pl-9 pr-10 text-sm placeholder-gray-500 hover:bg-white/10 transition-colors focus:outline-none"
+                className="w-full bg-background border border-border text-foreground h-11 rounded-lg pl-9 pr-10 text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-all"
                 placeholder="Search & select multiple assets..."
                 value={assetQuery}
                 onChange={(e) => {
@@ -304,29 +293,28 @@ const BatchConfiguration: React.FC<BatchConfigurationProps> = (
               />
               <button
                 type="button"
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-200"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                 onClick={() => setAssetDropdownOpen((o) => !o)}
               >
                 <ChevronDown
-                  className={`w-4 h-4 transition-transform ${
-                    assetDropdownOpen ? "rotate-180" : ""
-                  }`}
+                  className={`w-4 h-4 transition-transform ${assetDropdownOpen ? "rotate-180" : ""
+                    }`}
                 />
               </button>
             </div>
 
             {assetDropdownOpen && (
-              <div className="mt-2 max-h-60 overflow-y-auto rounded-xl border border-white/10 bg-white/5 shadow-xl custom-scrollbar">
+              <div className="mt-2 max-h-60 overflow-y-auto rounded-lg border border-border bg-card shadow-xl custom-scrollbar z-50">
                 {isLoading ? (
-                  <div className="px-3 py-2 text-sm text-gray-400">
+                  <div className="px-3 py-2 text-sm text-muted-foreground">
                     Loading assets…
                   </div>
                 ) : isError ? (
-                  <div className="px-3 py-2 text-sm text-red-400">
+                  <div className="px-3 py-2 text-sm text-destructive">
                     Failed to load assets
                   </div>
                 ) : currentAssets.length === 0 ? (
-                  <div className="px-3 py-2 text-sm text-gray-400">
+                  <div className="px-3 py-2 text-sm text-muted-foreground">
                     No assets found
                   </div>
                 ) : (
@@ -340,22 +328,21 @@ const BatchConfiguration: React.FC<BatchConfigurationProps> = (
                           toggleSelectedAsset(asset.symbol);
                           setAssetDropdownOpen(false);
                         }}
-                        className={`w-full flex items-center justify-between px-3 py-2 text-sm text-left transition-colors hover:bg-white/10 ${
-                          active
-                            ? "bg-white/10 text-gray-50"
-                            : "text-gray-100"
-                        }`}
+                        className={`w-full flex items-center justify-between px-3 py-2 text-sm text-left transition-colors hover:bg-muted/10 ${active
+                          ? "bg-primary/5 text-primary"
+                          : "text-foreground"
+                          }`}
                       >
                         <span>
-                          {asset.symbol}
-                          <span className="ml-2 text-xs text-gray-400">
+                          <span className="font-medium">{asset.symbol}</span>
+                          <span className="ml-2 text-xs text-muted-foreground">
                             {asset.name}
                           </span>
                         </span>
-                        <span className="flex items-center gap-2 text-xs text-gray-400">
+                        <span className="flex items-center gap-2 text-xs text-muted-foreground">
                           {CATEGORY_LABELS[category]}
                           {active && (
-                            <Check className="w-4 h-4 text-gray-100" />
+                            <Check className="w-4 h-4 text-primary" />
                           )}
                         </span>
                       </button>
@@ -372,10 +359,10 @@ const BatchConfiguration: React.FC<BatchConfigurationProps> = (
                     key={symbol}
                     type="button"
                     onClick={() => toggleSelectedAsset(symbol)}
-                    className="inline-flex items-center gap-1 rounded-full bg-white/10 px-3 py-1 text-xs text-gray-100 border border-white/30 hover:bg-white/20"
+                    className="inline-flex items-center gap-1.5 rounded-md bg-secondary/50 px-2.5 py-1 text-xs font-medium text-foreground border border-border hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30 transition-colors group"
                   >
                     <span>{symbol}</span>
-                    <span className="text-gray-300 text-sm">×</span>
+                    <span className="text-muted-foreground group-hover:text-destructive transition-colors">×</span>
                   </button>
                 ))}
               </div>
@@ -386,9 +373,6 @@ const BatchConfiguration: React.FC<BatchConfigurationProps> = (
 
       {/* Trading algorithm (applied to all assets) */}
       <div className="pt-2">
-        <p className="text-xs font-medium text-gray-400 mb-2">
-          Algorithm (applied to all assets)
-        </p>
         <AlgorithmSelector
           advancedMode={advancedMode}
           multiMode={false}
@@ -406,41 +390,41 @@ const BatchConfiguration: React.FC<BatchConfigurationProps> = (
     const baseAssetRow = assets.find((a) => a.symbol === baseAsset);
     const baseCategory =
       baseAssetRow &&
-      mapAssetTypeToCategory(baseAssetRow.asset_type || "")
+        mapAssetTypeToCategory(baseAssetRow.asset_type || "")
         ? (mapAssetTypeToCategory(
-            baseAssetRow.asset_type
-          ) as AssetCategoryKey)
+          baseAssetRow.asset_type
+        ) as AssetCategoryKey)
         : assetType;
 
     return (
       <div className="space-y-6">
         {/* Asset selection (base asset) */}
-        <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-4 md:px-5 md:py-5">
-          <div className="flex items-center gap-2 text-sm font-semibold text-gray-100 mb-4">
-            <Layers className="w-4 h-4" />
+        <div className="rounded-xl border border-border bg-card/30 p-5">
+          <div className="flex items-center gap-2 text-sm font-semibold text-foreground mb-4">
+            <Layers className="w-4 h-4 text-primary" />
             <span>Asset Selection</span>
           </div>
 
           <div className="space-y-4">
             <div>
-              <p className="text-xs font-medium text-gray-400 mb-2">
-                Base asset category
+              <p className="text-xs font-medium text-muted-foreground mb-3 uppercase tracking-wider">
+                Base Asset Category
               </p>
               {renderCategoryChips(true)}
             </div>
 
             <div>
-              <p className="text-xs font-medium text-gray-400 mb-2">
-                Base asset (applied to all algorithms)
+              <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wider">
+                Base Asset
               </p>
 
-              <div className="relative">
-                <div className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
+              <div className="relative group">
+                <div className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors">
                   <Search className="w-4 h-4" />
                 </div>
                 <input
                   type="text"
-                  className="w-full bg-white/5 border border-white/10 text-gray-100 h-11 rounded-xl pl-9 pr-10 text-sm placeholder-gray-500 hover:bg-white/10 transition-colors focus:outline-none"
+                  className="w-full bg-background border border-border text-foreground h-11 rounded-lg pl-9 pr-10 text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-all"
                   placeholder="Search base asset..."
                   value={baseAssetQuery}
                   onChange={(e) => {
@@ -451,31 +435,30 @@ const BatchConfiguration: React.FC<BatchConfigurationProps> = (
                 />
                 <button
                   type="button"
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-200"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                   onClick={() =>
                     setBaseAssetDropdownOpen((o) => !o)
                   }
                 >
                   <ChevronDown
-                    className={`w-4 h-4 transition-transform ${
-                      baseAssetDropdownOpen ? "rotate-180" : ""
-                    }`}
+                    className={`w-4 h-4 transition-transform ${baseAssetDropdownOpen ? "rotate-180" : ""
+                      }`}
                   />
                 </button>
               </div>
 
               {baseAssetDropdownOpen && (
-                <div className="mt-2 max-h-60 overflow-y-auto rounded-xl border border-white/10 bg-white/5 shadow-xl custom-scrollbar">
+                <div className="mt-2 max-h-60 overflow-y-auto rounded-lg border border-border bg-card shadow-xl custom-scrollbar z-50">
                   {isLoading ? (
-                    <div className="px-3 py-2 text-sm text-gray-400">
+                    <div className="px-3 py-2 text-sm text-muted-foreground">
                       Loading assets…
                     </div>
                   ) : isError ? (
-                    <div className="px-3 py-2 text-sm text-red-400">
+                    <div className="px-3 py-2 text-sm text-destructive">
                       Failed to load assets
                     </div>
                   ) : baseAssetResults.length === 0 ? (
-                    <div className="px-3 py-2 text-sm text-gray-400">
+                    <div className="px-3 py-2 text-sm text-muted-foreground">
                       No assets found
                     </div>
                   ) : (
@@ -490,22 +473,21 @@ const BatchConfiguration: React.FC<BatchConfigurationProps> = (
                             setBaseAssetQuery("");
                             setBaseAssetDropdownOpen(false);
                           }}
-                          className={`w-full flex items-center justify-between px-3 py-2 text-sm text-left transition-colors hover:bg-white/10 ${
-                            selected
-                              ? "bg-white/10 text-gray-50"
-                              : "text-gray-100"
-                          }`}
+                          className={`w-full flex items-center justify-between px-3 py-2 text-sm text-left transition-colors hover:bg-muted/10 ${selected
+                            ? "bg-primary/5 text-primary"
+                            : "text-foreground"
+                            }`}
                         >
                           <span>
-                            {asset.symbol}
-                            <span className="ml-2 text-xs text-gray-400">
+                            <span className="font-medium">{asset.symbol}</span>
+                            <span className="ml-2 text-xs text-muted-foreground">
                               {asset.name}
                             </span>
                           </span>
-                          <span className="flex items-center gap-2 text-xs text-gray-400">
+                          <span className="flex items-center gap-2 text-xs text-muted-foreground">
                             {CATEGORY_LABELS[category]}
                             {selected && (
-                              <Check className="w-4 h-4 text-gray-100" />
+                              <Check className="w-4 h-4 text-primary" />
                             )}
                           </span>
                         </button>
@@ -516,22 +498,19 @@ const BatchConfiguration: React.FC<BatchConfigurationProps> = (
               )}
 
               {baseAsset && baseAssetRow && (
-                <div className="mt-4 rounded-xl border border-white/10 bg-white/5 p-4 space-y-2">
-                  <h4 className="text-xs font-semibold text-gray-300 uppercase tracking-wide">
-                    Asset overview
+                <div className="mt-4 rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-2">
+                  <h4 className="text-xs font-semibold text-primary uppercase tracking-wide flex items-center gap-2">
+                    <Check className="w-3 h-3" />
+                    Selected Asset
                   </h4>
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-100">
+                    <span className="text-foreground font-medium">
                       {baseAssetRow.symbol} — {baseAssetRow.name}
                     </span>
-                    <span className="text-xs text-gray-400">
+                    <span className="text-xs text-muted-foreground bg-background px-2 py-0.5 rounded border border-border">
                       {CATEGORY_LABELS[baseCategory]}
                     </span>
                   </div>
-                  <p className="text-xs text-gray-400">
-                    This asset will be used as the common benchmark
-                    for all selected algorithms.
-                  </p>
                 </div>
               )}
             </div>
@@ -551,87 +530,143 @@ const BatchConfiguration: React.FC<BatchConfigurationProps> = (
     );
   };
 
-  return (
-    <Card className="glass-card">
-      <CardHeader className="pb-3">
-        <CardTitle className="text-sm font-semibold text-gray-100 flex items-center gap-2">
-          <Layers className="w-4 h-4" />
-          Batch configuration
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        {/* BATCH NAME */}
-        <div>
-          <label className="block text-xs font-medium text-gray-400 mb-2">
-            Batch name
-          </label>
-          <input
-            type="text"
-            className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-gray-100 placeholder-gray-500 hover:bg-white/10 transition-colors focus:outline-none"
-            placeholder="e.g., Tech Stocks Comparison"
-            value={batchName}
-            onChange={(e) => setBatchName(e.target.value)}
-          />
-        </div>
+  const { children } = props;
 
-        {/* COMPARISON TYPE */}
-        <div>
-          <p className="text-xs font-medium text-gray-400 mb-2">
-            Comparison type
-          </p>
-          <div className="grid md:grid-cols-2 gap-3">
+  return (
+    <div className="space-y-6">
+      <div className="grid gap-8 md:grid-cols-12 items-start">
+        {/* Main Configuration Column */}
+        <div className="md:col-span-8 space-y-6">
+
+          {/* 1. Comparison Type Selection */}
+          <div className="grid md:grid-cols-2 gap-4">
             <button
               type="button"
               onClick={() => setBatchType("assets")}
-              className={`flex items-start gap-3 rounded-xl border px-4 py-3 text-left transition-colors ${
-                batchType === "assets"
-                  ? "bg-white/10 border-white/60 text-gray-50 shadow-sm"
-                  : "bg-white/[0.03] border-white/10 text-gray-200 hover:bg-white/10 hover:border-white/40"
-              }`}
+              className={`relative group flex flex-col gap-3 rounded-xl border p-5 text-left transition-all duration-200 ${batchType === "assets"
+                ? "bg-primary/5 border-primary ring-1 ring-primary/20 shadow-md"
+                : "bg-card border-border hover:bg-accent/50 hover:border-accent-foreground/20"
+                }`}
             >
-              <div className="mt-1">
-                <Layers className="w-4 h-4" />
+              <div className="flex items-center justify-between w-full">
+                <div className={`p-2 rounded-lg ${batchType === "assets" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground group-hover:text-foreground"
+                  }`}>
+                  <Layers className="w-5 h-5" />
+                </div>
+                {batchType === "assets" && <Check className="w-5 h-5 text-primary" />}
               </div>
               <div>
-                <div className="text-xs font-semibold">
-                  Multiple Assets
+                <div className={`text-base font-semibold mb-1.5 ${batchType === "assets" ? "text-primary" : "text-foreground"
+                  }`}>
+                  Multi-Asset Analysis
                 </div>
-                <div className="text-[11px] text-gray-400">
-                  Same algorithm, different assets
-                </div>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  Run the same strategy across multiple assets simultaneously to compare performance.
+                </p>
               </div>
             </button>
 
             <button
               type="button"
               onClick={() => setBatchType("algorithms")}
-              className={`flex items-start gap-3 rounded-xl border px-4 py-3 text-left transition-colors ${
-                batchType === "algorithms"
-                  ? "bg-white/10 border-white/60 text-gray-50 shadow-sm"
-                  : "bg-white/[0.03] border-white/10 text-gray-200 hover:bg-white/10 hover:border-white/40"
-              }`}
+              className={`relative group flex flex-col gap-3 rounded-xl border p-5 text-left transition-all duration-200 ${batchType === "algorithms"
+                ? "bg-primary/5 border-primary ring-1 ring-primary/20 shadow-md"
+                : "bg-card border-border hover:bg-accent/50 hover:border-accent-foreground/20"
+                }`}
             >
-              <div className="mt-1">
-                <GitBranch className="w-4 h-4" />
+              <div className="flex items-center justify-between w-full">
+                <div className={`p-2 rounded-lg ${batchType === "algorithms" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground group-hover:text-foreground"
+                  }`}>
+                  <GitBranch className="w-5 h-5" />
+                </div>
+                {batchType === "algorithms" && <Check className="w-5 h-5 text-primary" />}
               </div>
               <div>
-                <div className="text-xs font-semibold">
-                  Multiple Algorithms
+                <div className={`text-base font-semibold mb-1.5 ${batchType === "algorithms" ? "text-primary" : "text-foreground"
+                  }`}>
+                  Multi-Strategy Analysis
                 </div>
-                <div className="text-[11px] text-gray-400">
-                  Same asset, different algorithms
-                </div>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  Compare different algorithms or parameter sets against a single benchmark asset.
+                </p>
               </div>
             </button>
           </div>
+
+          {/* 2. Mode Specific Configuration */}
+          <Card className="glass-card border-border bg-card">
+            <CardContent className="p-6">
+              {batchType === "assets"
+                ? renderMultiAssetSection()
+                : renderMultiAlgoSection()}
+            </CardContent>
+          </Card>
+
         </div>
 
-        {/* MODE-SPECIFIC CONTENT */}
-        {batchType === "assets"
-          ? renderMultiAssetSection()
-          : renderMultiAlgoSection()}
-      </CardContent>
-    </Card>
+        {/* Sidebar Configuration Column */}
+        <div className="md:col-span-4 space-y-6">
+          <Card className="glass-card border-white/10 bg-card/50 h-fit sticky top-6">
+            <CardHeader className="pb-3 border-b border-white/5">
+              <CardTitle className="text-base font-semibold flex items-center gap-2">
+                <Check className="w-4 h-4 text-emerald-500" />
+                Batch Details
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-5 space-y-4">
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  Batch Name
+                </label>
+                <input
+                  type="text"
+                  className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-all"
+                  placeholder="e.g. Q1 Tech Momentum"
+                  value={batchName}
+                  onChange={(e) => setBatchName(e.target.value)}
+                />
+                <p className="text-[10px] text-muted-foreground">
+                  Give this simulation run a descriptive name to identify it later in history.
+                </p>
+              </div>
+
+              <div className="space-y-2 pt-2 border-t border-white/5">
+                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  Summary
+                </label>
+                <div className="rounded-lg bg-black/20 p-3 space-y-2 border border-white/5">
+                  <div className="flex justify-between text-xs">
+                    <span className="text-muted-foreground">Mode</span>
+                    <span className="font-medium text-foreground">
+                      {batchType === "assets" ? "Multi-Asset" : "Multi-Strategy"}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-muted-foreground">Assets</span>
+                    <span className="font-medium text-foreground">
+                      {batchType === "assets"
+                        ? selectedAssets.length
+                        : baseAsset ? 1 : 0}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-muted-foreground">Strategies</span>
+                    <span className="font-medium text-foreground">
+                      {batchType === "assets"
+                        ? baseAlgorithm ? 1 : 0
+                        : selectedAlgorithms.length}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Additional Configuration Passed as Children */}
+          {children}
+        </div>
+      </div>
+    </div>
   );
 };
 

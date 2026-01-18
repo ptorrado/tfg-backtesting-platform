@@ -236,6 +236,7 @@ def list_simulations(
                 profit_loss_percentage=profit_loss_pct,
                 batch_name=sim.batch_name,
                 batch_group_id=sim.batch_group_id,
+                params=sim.params or None,
             )
         )
 

@@ -13,8 +13,8 @@ import {
   Check,
 } from "lucide-react";
 
-import { Card, CardHeader, CardTitle, CardContent } from "../ui/card";
-import { Asset, listAssets } from "../../api/assets";
+import { Card, CardHeader, CardTitle, CardContent } from "../../ui/card";
+import { Asset, listAssets } from "../../../api/assets";
 
 export type AssetCategoryKey = "stocks" | "crypto" | "etf" | "commodities" | "forex" | "index";
 
@@ -25,12 +25,12 @@ type AssetCategory = {
 };
 
 const ASSET_CATEGORIES: AssetCategory[] = [
-  { key: "stocks",      label: "Stocks",      icon: TrendingUp },
-  { key: "crypto",      label: "Crypto",      icon: Bitcoin },
-  { key: "etf",         label: "ETF",         icon: BarChart3 },
+  { key: "stocks", label: "Stocks", icon: TrendingUp },
+  { key: "crypto", label: "Crypto", icon: Bitcoin },
+  { key: "etf", label: "ETF", icon: BarChart3 },
   { key: "commodities", label: "Commodities", icon: Landmark },
   { key: "forex", label: "Forex", icon: Coins },
-  { key: "index",       label: "Index",       icon: DollarSign },
+  { key: "index", label: "Index", icon: DollarSign },
 ];
 
 type AssetSelectorProps = {
@@ -131,9 +131,9 @@ const AssetSelector: React.FC<AssetSelectorProps> = ({
     currentCategory.key;
 
   return (
-    <Card className="relative h-full flex flex-col rounded-2xl border border-white/10 bg-white/[0.03]">
+    <Card className="relative h-full flex flex-col rounded-2xl border border-border bg-card">
       <CardHeader className="pb-3">
-        <CardTitle className="text-sm font-semibold text-gray-100 flex items-center gap-2">
+        <CardTitle className="text-sm font-semibold text-foreground flex items-center gap-2">
           <Landmark className="w-4 h-4" />
           Asset Selection
         </CardTitle>
@@ -142,7 +142,7 @@ const AssetSelector: React.FC<AssetSelectorProps> = ({
       <CardContent className="space-y-4 flex-1 flex flex-col">
         {/* CATEGORY TABS */}
         <div>
-          <p className="text-xs font-medium text-gray-400 mb-2">Category</p>
+          <p className="text-xs font-medium text-muted-foreground mb-2">Category</p>
           <div className="flex flex-wrap gap-3">
             {ASSET_CATEGORIES.map((cat) => {
               const Icon = cat.icon;
@@ -156,16 +156,14 @@ const AssetSelector: React.FC<AssetSelectorProps> = ({
                     setAssetName("");
                     setQuery("");
                   }}
-                  className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-medium border transition-all ${
-                    active
-                      ? "bg-white/15 border-white/60 text-gray-100 shadow-sm"
-                      : "bg-white/[0.03] border-white/10 text-gray-300 hover:bg-white/10 hover:border-white/40 hover:text-gray-100"
-                  }`}
+                  className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-medium border transition-all ${active
+                    ? "bg-primary/20 border-primary/50 text-foreground shadow-sm"
+                    : "bg-muted/20 border-border text-muted-foreground hover:bg-accent/50 hover:border-border hover:text-foreground"
+                    }`}
                 >
                   <Icon
-                    className={`w-4 h-4 ${
-                      active ? "text-gray-100" : "text-gray-400"
-                    }`}
+                    className={`w-4 h-4 ${active ? "text-foreground" : "text-muted-foreground"
+                      }`}
                   />
                   <span className="sm:hidden">
                     {cat.key === "commodities" ? "Cmdty" : cat.label}
@@ -179,14 +177,14 @@ const AssetSelector: React.FC<AssetSelectorProps> = ({
 
         {/* ASSET DROPDOWN */}
         <div>
-          <p className="text-xs font-medium text-gray-400 mb-2">Asset</p>
+          <p className="text-xs font-medium text-muted-foreground mb-2">Asset</p>
           <div className="relative">
-            <div className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
+            <div className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
               <Search className="w-4 h-4" />
             </div>
             <input
               type="text"
-              className="w-full bg-white/5 border border-white/10 text-gray-100 h-11 rounded-xl pl-9 pr-10 text-sm placeholder-gray-500 hover:bg-white/10 transition-colors focus:outline-none"
+              className="w-full bg-input border border-border text-foreground h-11 rounded-xl pl-9 pr-10 text-sm placeholder-muted-foreground hover:bg-accent/50 transition-colors focus:outline-none"
               placeholder="Search by symbol (e.g. AAPL, BTC/USD, SPY)..."
               value={query}
               onChange={(e) => {
@@ -197,29 +195,28 @@ const AssetSelector: React.FC<AssetSelectorProps> = ({
             />
             <button
               type="button"
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-200"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
               onClick={() => setOpen((o) => !o)}
             >
               <ChevronDown
-                className={`w-4 h-4 transition-transform ${
-                  open ? "rotate-180" : ""
-                }`}
+                className={`w-4 h-4 transition-transform ${open ? "rotate-180" : ""
+                  }`}
               />
             </button>
           </div>
 
           {open && (
-            <div className="mt-2 max-h-60 overflow-y-auto rounded-xl border border-white/10 bg-white/5 shadow-xl custom-scrollbar">
+            <div className="mt-2 max-h-60 overflow-y-auto rounded-xl border border-border bg-popover shadow-xl custom-scrollbar">
               {isLoading ? (
-                <div className="px-3 py-2 text-sm text-gray-400">
+                <div className="px-3 py-2 text-sm text-muted-foreground">
                   Loading assets…
                 </div>
               ) : isError ? (
-                <div className="px-3 py-2 text-sm text-red-400">
+                <div className="px-3 py-2 text-sm text-destructive">
                   Failed to load assets
                 </div>
               ) : filteredAssets.length === 0 ? (
-                <div className="px-3 py-2 text-sm text-gray-400">
+                <div className="px-3 py-2 text-sm text-muted-foreground">
                   No assets found
                 </div>
               ) : (
@@ -230,22 +227,21 @@ const AssetSelector: React.FC<AssetSelectorProps> = ({
                       key={asset.id}
                       type="button"
                       onClick={() => handleSelect(asset, category)}
-                      className={`w-full flex items-center justify-between px-3 py-2 text-sm text-left transition-colors hover:bg-white/10 ${
-                        selected
-                          ? "bg-white/10 text-gray-50"
-                          : "text-gray-100"
-                      }`}
+                      className={`w-full flex items-center justify-between px-3 py-2 text-sm text-left transition-colors hover:bg-accent/50 ${selected
+                        ? "bg-accent text-foreground"
+                        : "text-foreground"
+                        }`}
                     >
                       <span>
                         {asset.symbol}
-                        <span className="ml-2 text-xs text-gray-400">
+                        <span className="ml-2 text-xs text-muted-foreground">
                           {asset.name}
                         </span>
                       </span>
-                      <span className="flex items-center gap-2 text-xs text-gray-400">
+                      <span className="flex items-center gap-2 text-xs text-muted-foreground">
                         {getCategoryLabel(category)}
                         {selected && (
-                          <Check className="w-4 h-4 text-gray-100" />
+                          <Check className="w-4 h-4 text-primary" />
                         )}
                       </span>
                     </button>
@@ -258,19 +254,19 @@ const AssetSelector: React.FC<AssetSelectorProps> = ({
 
         {/* OVERVIEW */}
         {assetName && selectedAsset && (
-          <div className="mt-4 rounded-xl border border-white/10 bg-white/5 p-4 space-y-2">
-            <h4 className="text-xs font-semibold text-gray-300 uppercase tracking-wide">
+          <div className="mt-4 rounded-xl border border-border bg-muted/20 p-4 space-y-2">
+            <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
               Asset overview
             </h4>
             <div className="flex justify-between text-sm">
-              <span className="text-gray-100">
+              <span className="text-foreground">
                 {selectedAsset.symbol} — {selectedAsset.name}
               </span>
-              <span className="text-xs text-gray-400">
+              <span className="text-xs text-muted-foreground">
                 {getCategoryLabel(selectedCategory)}
               </span>
             </div>
-            <p className="text-xs text-gray-400">
+            <p className="text-xs text-muted-foreground">
               Synthetic historical data will be used to simulate this asset&apos;s
               performance over the selected period.
             </p>

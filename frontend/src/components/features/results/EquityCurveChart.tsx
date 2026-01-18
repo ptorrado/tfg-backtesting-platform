@@ -8,8 +8,9 @@ import {
   XAxis,
   YAxis,
 } from "recharts"
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "../../ui/card"
 import { TrendingUp } from "lucide-react"
+import { formatDate } from "../../../utils"
 
 export interface EquityPoint {
   date: string
@@ -24,11 +25,11 @@ export default function EquityCurveChart({ data }: EquityCurveChartProps) {
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
       return (
-        <div className="glass-card border border-slate-700 rounded-lg p-3">
-          <p className="text-slate-400 text-xs">
-            {payload[0].payload.date}
+        <div className="glass-card border border-border bg-popover rounded-lg p-3">
+          <p className="text-muted-foreground text-xs">
+            {formatDate(payload[0].payload.date)}
           </p>
-          <p className="text-slate-100 font-semibold text-base">
+          <p className="text-foreground font-semibold text-base">
             ${payload[0].value.toLocaleString()}
           </p>
         </div>
@@ -38,9 +39,9 @@ export default function EquityCurveChart({ data }: EquityCurveChartProps) {
   }
 
   return (
-    <Card className="glass-card border-white/5">
-      <CardHeader className="border-b border-white/5 pb-4">
-        <CardTitle className="text-gray-100 flex items-center gap-2 text-base font-semibold">
+    <Card className="glass-card border-border bg-card h-full">
+      <CardHeader className="border-b border-border pb-4">
+        <CardTitle className="text-foreground flex items-center gap-2 text-base font-semibold">
           <TrendingUp
             className="w-4 h-4 text-emerald-500"
             strokeWidth={2}
@@ -50,7 +51,7 @@ export default function EquityCurveChart({ data }: EquityCurveChartProps) {
       </CardHeader>
       <CardContent className="p-6">
         <ResponsiveContainer width="100%" height={280}>
-          <AreaChart data={data}>
+          <AreaChart data={data} margin={{ left: 0, right: 0, top: 10, bottom: 0 }}>
             <defs>
               <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
                 <stop
@@ -65,18 +66,23 @@ export default function EquityCurveChart({ data }: EquityCurveChartProps) {
                 />
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
             <XAxis
               dataKey="date"
-              stroke="#475569"
-              tick={{ fill: "#6b7280", fontSize: 11 }}
+              stroke="hsl(var(--muted-foreground))"
+              tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
+              minTickGap={20}
+              tickFormatter={(value) => formatDate(value)}
             />
             <YAxis
-              stroke="#475569"
-              tick={{ fill: "#6b7280", fontSize: 11 }}
+              stroke="hsl(var(--muted-foreground))"
+              tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
               tickFormatter={(value: number) =>
                 `$${(value / 1000).toFixed(0)}k`
               }
+              width={40}
+              tickCount={6}
+              minTickGap={20}
             />
             <Tooltip content={<CustomTooltip />} />
             <Area
