@@ -17,6 +17,12 @@ import { HistoryTable } from "../components/features/history/HistoryTable";
 // solo el estado `itemToDelete`. Asumo que faltaba implmentarlo o estaba "invisible".
 // Voy a agregar un pequeño overlay simple si hay itemToDelete.
 
+/**
+ * History
+ * 
+ * Page displaying the history of past simulations.
+ * Supports filtering, sorting, and deleting simulations (single or batch).
+ */
 export default function History() {
   const {
     viewMode,

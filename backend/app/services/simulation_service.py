@@ -21,8 +21,8 @@ from app.schemas.simulations import (
 
 logger = logging.getLogger(__name__)
 
-BENCHMARK_ALGO_ID = "omniscient_benchmark"
-BENCHMARK_NAME = "Omniscient benchmark"
+BENCHMARK_ALGO_ID = "market_benchmark"
+BENCHMARK_NAME = "Market Benchmark"
 
 
 # =========================
@@ -126,7 +126,7 @@ def run_and_store_simulation(
 ) -> SimulationDetail:
     """
     Runs a backtest, stores the result in DB and returns the full detail.
-    Also tries to compute and store an 'omniscient_benchmark' for comparison.
+    Also tries to compute and store a 'market_benchmark' for comparison.
     """
     try:
         result_main: Dict[str, Any] = run_backtest(
@@ -167,7 +167,7 @@ def run_and_store_simulation(
         )
         save_simulation(db, result_bench)
     except Exception:  # noqa: BLE001
-        logger.warning("Omniscient benchmark failed", exc_info=True)
+        logger.warning("Market benchmark failed", exc_info=True)
 
     return _build_simulation_detail(db, sim_main)
 
@@ -183,7 +183,7 @@ def list_simulations(
     """
     List simulations for the History view.
     Supports sorting and optional filtering by asset symbol.
-    Excludes the omniscient benchmark runs.
+    Excludes the market benchmark runs.
     """
     order_by = order_by.lower().strip()
     direction = direction.lower().strip()

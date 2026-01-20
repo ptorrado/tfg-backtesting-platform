@@ -3,7 +3,7 @@ import React, { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "../../ui/card";
 import { Calendar } from "lucide-react";
 import { EquityPoint } from "../../../api/simulations";
-import { format, parseISO, getYear, getMonth, lastDayOfMonth, getDate } from "date-fns";
+import { format, parseISO, getYear, getMonth } from "date-fns";
 import { cn } from "../../../lib/utils";
 
 interface MonthlyReturnsHeatmapProps {
@@ -70,8 +70,7 @@ export default function MonthlyReturnsHeatmap({ data }: MonthlyReturnsHeatmapPro
         if (value === 0) return "bg-muted/50 text-muted-foreground";
 
         const abs = Math.abs(value);
-        // Scale opacity based on magnitude (cap at 15% return)
-        const opacity = Math.min(abs / 0.15, 1);
+
 
         if (value > 0) {
             // Emerald

@@ -1,14 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
 import {
   ArrowLeft,
-  DollarSign,
-  TrendingUp,
-  Target,
-  Activity,
-  BarChart3,
-  Award,
   Plus,
 } from "lucide-react";
 
@@ -22,16 +15,9 @@ import { createPageUrl } from "../utils";
 import { Button } from "../components/ui/button";
 import { Skeleton } from "../components/ui/skeleton";
 
-import MetricsCard from "../components/features/results/MetricsCard";
-import EquityCurveChart from "../components/features/results/EquityCurveChart";
-import TradesTable from "../components/features/results/TradesTable";
-import BenchmarkComparison from "../components/features/results/BenchmarkComparison";
 import BatchComparison, {
   SimulationForBatch,
 } from "../components/features/results/BatchComparison";
-import DrawdownChart from "../components/features/results/DrawdownChart";
-import MonthlyReturnsHeatmap from "../components/features/results/MonthlyReturnsHeatmap";
-import KeyRatios from "../components/features/results/KeyRatios";
 import SingleSimulationDashboard from "../components/features/results/SingleSimulationDashboard";
 
 // ===== Tipos internos =====
@@ -41,13 +27,6 @@ interface EquityPoint {
   value: number;
 }
 
-interface TradeRow {
-  date: string;
-  type: "buy" | "sell" | string;
-  price: number;
-  quantity: number;
-  profit_loss: number;
-}
 
 // ===== Helpers métricas =====
 
@@ -93,6 +72,12 @@ function computeSharpe(curve: EquityPoint[]): number {
 
 // ===== Componente principal =====
 
+/**
+ * Result
+ * 
+ * Page component that displays the results of one or multiple simulations.
+ * Handles fetching simulation data by ID(s) and switching between single and batch views.
+ */
 export default function Result() {
   const navigate = useNavigate();
 
@@ -191,7 +176,6 @@ export default function Result() {
   const isBatchMode = simulations.length > 1;
   const sim = simulations[0];
 
-  // ======================= SINGLE SIM =======================
   // ======================= SINGLE SIM =======================
   if (!isBatchMode) {
     return (

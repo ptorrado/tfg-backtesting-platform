@@ -10,7 +10,6 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { formatDate } from "../../../utils";
 import { Activity } from "lucide-react";
 import { getMarketData, MarketCandle } from "../../../api/marketData";
 

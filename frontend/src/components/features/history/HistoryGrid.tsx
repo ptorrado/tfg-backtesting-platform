@@ -4,10 +4,9 @@ import { format } from "date-fns";
 import {
     TrendingUp,
     TrendingDown,
-    Calendar,
-    DollarSign,
     LineChart,
-    X,
+    Calendar,
+    X
 } from "lucide-react";
 
 import { Card, CardContent } from "../../ui/card";

@@ -4,7 +4,6 @@ import {
     SimulationDetail,
     EquityPoint as ApiEquityPoint,
 } from "../../../api/simulations";
-import MetricsCard from "./MetricsCard";
 import EquityCurveChart from "./EquityCurveChart";
 import TradesTable from "./TradesTable";
 import BenchmarkComparison from "./BenchmarkComparison";
@@ -159,7 +158,7 @@ export default function SingleSimulationDashboard({ simulation: sim }: SingleSim
 
     return (
         <div className="space-y-6">
-            {/* Row 1: Key Ratios */}
+            {/* Row 1: Key Ratios & Financial Summary */}
             <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -170,6 +169,9 @@ export default function SingleSimulationDashboard({ simulation: sim }: SingleSim
                     winRate={accuracy}
                     maxDrawdown={maxDrawdownMetric}
                     totalReturn={totalReturnPct}
+                    initialCapital={initialCapital}
+                    finalEquity={finalValue}
+                    netProfit={profitLoss}
                 />
             </motion.div>
 

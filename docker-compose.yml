@@ -12,5 +12,17 @@ services:
       - backtest_pgdata:/var/lib/postgresql/data
     restart: unless-stopped
 
+  market-seeder:
+    build: ./backend
+    container_name: market-seeder
+    volumes:
+      - ./backend:/app
+    environment:
+      - DATABASE_URL=postgresql://backtest:backtest@backtest-db:5432/backtest_lab
+      - PYTHONPATH=/app
+    depends_on:
+      - backtest-db
+    restart: unless-stopped
+
 volumes:
   backtest_pgdata:

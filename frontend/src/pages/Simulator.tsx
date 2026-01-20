@@ -11,6 +11,12 @@ import BatchModeToggle from "../components/features/simulator/BatchModeToggle";
 import BatchConfiguration from "../components/features/simulator/BatchConfiguration";
 import { Button } from "../components/ui/button";
 
+/**
+ * Simulator
+ * 
+ * Main simulation configuration page.
+ * Allows users to set up partial or batch simulations, select assets/algorithms, and run backtests.
+ */
 const Simulator: React.FC = () => {
   const {
     assetName, setAssetName,

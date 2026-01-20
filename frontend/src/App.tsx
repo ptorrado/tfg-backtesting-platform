@@ -3,6 +3,7 @@ import React from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
 import Layout from "./layout/Layout";
+import ScrollToTop from "./components/layout/ScrollToTop";
 import Simulator from "./pages/Simulator";
 import Results from "./pages/Result";
 import History from "./pages/History";
@@ -10,6 +11,7 @@ import History from "./pages/History";
 export default function App() {
   return (
     <BrowserRouter>
+      <ScrollToTop />
       <Layout>
         <Routes>
           <Route path="/" element={<Navigate to="/simulator" replace />} />

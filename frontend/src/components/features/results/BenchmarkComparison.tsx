@@ -56,7 +56,7 @@ export default function BenchmarkComparison({
             </p>
             {payload[1] && (
               <p className="text-purple-400 font-semibold text-sm">
-                Perfect Algorithm: ${payload[1].value.toLocaleString()}
+                Market Benchmark: ${payload[1].value.toLocaleString()}
               </p>
             )}
           </div>
@@ -77,8 +77,8 @@ export default function BenchmarkComparison({
         : "bg-red-500/10 text-red-400 border-red-500/30"
 
   return (
-    <Card className="glass-card border-border bg-card h-full">
-      <CardHeader className="border-b border-border pb-4">
+    <Card className="glass-card border-border bg-card h-full flex flex-col">
+      <CardHeader className="border-b border-border pb-4 shrink-0">
         <div className="flex items-center justify-between">
           <CardTitle className="text-foreground flex items-center gap-2 text-base font-semibold">
             <Trophy
@@ -95,8 +95,8 @@ export default function BenchmarkComparison({
           </Badge>
         </div>
       </CardHeader>
-      <CardContent className="p-6">
-        <div className="grid grid-cols-2 gap-4 mb-6">
+      <CardContent className="p-6 flex-1 flex flex-col min-h-0">
+        <div className="grid grid-cols-2 gap-4 mb-4 shrink-0">
           <div className="bg-emerald-500/5 rounded-xl p-4 border border-emerald-500/20">
             <div className="flex items-center gap-2 mb-2">
               <Target
@@ -123,7 +123,7 @@ export default function BenchmarkComparison({
                 strokeWidth={2}
               />
               <p className="text-xs text-muted-foreground uppercase font-medium">
-                Perfect Algorithm
+                Market Benchmark
               </p>
             </div>
             <p
@@ -136,101 +136,102 @@ export default function BenchmarkComparison({
           </div>
         </div>
 
-        <ResponsiveContainer width="100%" height={300}>
-          <AreaChart data={combinedData} margin={{ left: 0, right: 0, top: 10, bottom: 0 }}>
-            <defs>
-              <linearGradient
-                id="colorAlgorithm"
-                x1="0"
-                y1="0"
-                x2="0"
-                y2="1"
-              >
-                <stop
-                  offset="5%"
-                  stopColor="#10b981"
-                  stopOpacity={0.3}
-                />
-                <stop
-                  offset="95%"
-                  stopColor="#10b981"
-                  stopOpacity={0}
-                />
-              </linearGradient>
-              <linearGradient
-                id="colorPerfect"
-                x1="0"
-                y1="0"
-                x2="0"
-                y2="1"
-              >
-                <stop
-                  offset="5%"
-                  stopColor="#a855f7"
-                  stopOpacity={0.3}
-                />
-                <stop
-                  offset="95%"
-                  stopColor="#a855f7"
-                  stopOpacity={0}
-                />
-              </linearGradient>
-            </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-            <XAxis
-              dataKey="date"
-              stroke="hsl(var(--muted-foreground))"
-              tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
-              minTickGap={20}
-              tickFormatter={(value) => formatDate(value)}
-            />
-            <YAxis
-              stroke="hsl(var(--muted-foreground))"
-              tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
-              tickFormatter={(value: number) =>
-                `$${(value / 1000).toFixed(0)}k`
-              }
-              width={40}
-              tickCount={6}
-              minTickGap={20}
-            />
-            <Tooltip content={<CustomTooltip />} />
-            <Legend
-              wrapperStyle={{ paddingTop: "20px" }}
-              iconType="line"
-            />
-            <Area
-              type="monotone"
-              dataKey="algorithm"
-              stroke="#10b981"
-              strokeWidth={2}
-              fill="url(#colorAlgorithm)"
-              name="Your Algorithm"
-            />
-            <Area
-              type="monotone"
-              dataKey="perfect"
-              stroke="#a855f7"
-              strokeWidth={2}
-              fill="url(#colorPerfect)"
-              name="Perfect Algorithm"
-              strokeDasharray="5 5"
-            />
-          </AreaChart>
-        </ResponsiveContainer>
+        <div className="flex-1 w-full min-h-[350px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={combinedData} margin={{ left: 0, right: 0, top: 10, bottom: 0 }}>
+              <defs>
+                <linearGradient
+                  id="colorAlgorithm"
+                  x1="0"
+                  y1="0"
+                  x2="0"
+                  y2="1"
+                >
+                  <stop
+                    offset="5%"
+                    stopColor="#10b981"
+                    stopOpacity={0.3}
+                  />
+                  <stop
+                    offset="95%"
+                    stopColor="#10b981"
+                    stopOpacity={0}
+                  />
+                </linearGradient>
+                <linearGradient
+                  id="colorPerfect"
+                  x1="0"
+                  y1="0"
+                  x2="0"
+                  y2="1"
+                >
+                  <stop
+                    offset="5%"
+                    stopColor="#a855f7"
+                    stopOpacity={0.3}
+                  />
+                  <stop
+                    offset="95%"
+                    stopColor="#a855f7"
+                    stopOpacity={0}
+                  />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+              <XAxis
+                dataKey="date"
+                stroke="hsl(var(--muted-foreground))"
+                tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
+                minTickGap={20}
+                tickFormatter={(value) => formatDate(value)}
+              />
+              <YAxis
+                stroke="hsl(var(--muted-foreground))"
+                tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
+                tickFormatter={(value: number) =>
+                  `$${(value / 1000).toFixed(0)}k`
+                }
+                width={40}
+                tickCount={6}
+                minTickGap={20}
+              />
+              <Tooltip content={<CustomTooltip />} />
+              <Legend
+                wrapperStyle={{ paddingTop: "20px" }}
+                iconType="line"
+              />
+              <Area
+                type="monotone"
+                dataKey="algorithm"
+                stroke="#10b981"
+                strokeWidth={2}
+                fill="url(#colorAlgorithm)"
+                name="Your Algorithm"
+              />
+              <Area
+                type="monotone"
+                dataKey="perfect"
+                stroke="#a855f7"
+                strokeWidth={2}
+                fill="url(#colorPerfect)"
+                name="Market Benchmark"
+                strokeDasharray="5 5"
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
 
-        <div className="mt-6 bg-muted/20 rounded-xl p-4 border border-border">
+        <div className="mt-4 bg-muted/20 rounded-xl p-4 border border-border shrink-0">
           <p className="text-xs text-muted-foreground mb-2">
             <span className="font-semibold text-purple-400">
-              Perfect Algorithm
+              Market Benchmark
             </span>{" "}
-            uses omniscient market knowledge
+            represents buying and holding the asset
           </p>
           <p className="text-xs text-muted-foreground">
-            This theoretical benchmark always buys at local minimums
-            and sells at local maximums. It represents the maximum
-            possible profit from the given price movements and serves
-            as a reference point to evaluate your algorithm&apos;s
+            This benchmark compares your strategy against simply holding the asset
+            for the entire duration. It represents the market growth
+            and serves as a reference point to evaluate your algorithm&apos;s
             efficiency.
           </p>
         </div>
