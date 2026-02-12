@@ -72,6 +72,7 @@ export default function ConfigPanel({
                 ref={startRef}
                 id="start-date"
                 type="date"
+                max={endDate}
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
                 className="bg-input border-border text-foreground h-11 rounded-xl pr-10 hover:bg-accent/50 transition-colors"
@@ -101,6 +102,7 @@ export default function ConfigPanel({
                 ref={endRef}
                 id="end-date"
                 type="date"
+                min={startDate}
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
                 className="bg-input border-border text-foreground h-11 rounded-xl pr-10 hover:bg-accent/50 transition-colors"

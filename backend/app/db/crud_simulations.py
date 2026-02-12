@@ -4,7 +4,7 @@ from typing import Any, Dict, List
 
 from sqlalchemy.orm import Session
 
-from . import models
+from app import models
 
 
 def _normalize_date(value: Any) -> date:

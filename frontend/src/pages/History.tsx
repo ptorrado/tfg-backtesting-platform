@@ -103,6 +103,8 @@ export default function History() {
             items={items}
             onOpenSingle={handleOpenSingle}
             onOpenBatch={handleOpenBatch}
+            onAskDeleteSingle={handleAskDeleteSingle}
+            onAskDeleteBatch={handleAskDeleteBatch}
           />
         )}
 

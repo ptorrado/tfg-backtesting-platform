@@ -1,0 +1,80 @@
+﻿Starting EXTENSIVE Performance Benchmark (Long Duration)...
+=========================================================
+
+Target Assets: ['AAPL', 'BTC-USD', 'EURUSD=X']
+
+Testing AAPL | sma_crossover | 5 Years | Iterations: 3
+
+Testing AAPL | sma_crossover | 10 Years | Iterations: 3
+
+Testing AAPL | sma_crossover | 20 Years | Iterations: 3
+
+Testing AAPL | sma_crossover | 30 Years | Iterations: 3
+
+Testing AAPL | sma_crossover | 40 Years | Iterations: 3
+
+Testing AAPL | rsi_reversion | 5 Years | Iterations: 3
+
+Testing AAPL | rsi_reversion | 10 Years | Iterations: 3
+
+Testing AAPL | rsi_reversion | 20 Years | Iterations: 3
+
+Testing AAPL | rsi_reversion | 30 Years | Iterations: 3
+
+Testing AAPL | rsi_reversion | 40 Years | Iterations: 3
+
+Testing BTC-USD | sma_crossover | 5 Years | Iterations: 3
+
+Testing BTC-USD | sma_crossover | 10 Years | Iterations: 3
+Skipping BTC-USD 20Y: insufficient data (Available: 11.4Y)
+Skipping BTC-USD 30Y: insufficient data (Available: 11.4Y)
+Skipping BTC-USD 40Y: insufficient data (Available: 11.4Y)
+
+Testing BTC-USD | rsi_reversion | 5 Years | Iterations: 3
+
+Testing BTC-USD | rsi_reversion | 10 Years | Iterations: 3
+Skipping BTC-USD 20Y: insufficient data (Available: 11.4Y)
+Skipping BTC-USD 30Y: insufficient data (Available: 11.4Y)
+Skipping BTC-USD 40Y: insufficient data (Available: 11.4Y)
+
+Testing EURUSD=X | sma_crossover | 5 Years | Iterations: 3
+
+Testing EURUSD=X | sma_crossover | 10 Years | Iterations: 3
+
+Testing EURUSD=X | sma_crossover | 20 Years | Iterations: 3
+Skipping EURUSD=X 30Y: insufficient data (Available: 22.2Y)
+Skipping EURUSD=X 40Y: insufficient data (Available: 22.2Y)
+
+Testing EURUSD=X | rsi_reversion | 5 Years | Iterations: 3
+
+Testing EURUSD=X | rsi_reversion | 10 Years | Iterations: 3
+
+Testing EURUSD=X | rsi_reversion | 20 Years | Iterations: 3
+Skipping EURUSD=X 30Y: insufficient data (Available: 22.2Y)
+Skipping EURUSD=X 40Y: insufficient data (Available: 22.2Y)
+
+
+================================ RESULTS SUMMARY ================================
+
+| Asset    | Algorithm     | Duration   |   Avg Time (s) |   Std Dev (s) |   Avg Mem (MB) |   Avg Trades |
+|----------|---------------|------------|----------------|---------------|----------------|--------------|
+| AAPL     | sma_crossover | 5Y         |         1.1969 |        0.4478 |          19.99 |           48 |
+| AAPL     | sma_crossover | 10Y        |         1.6157 |        0.0249 |           2.05 |           86 |
+| AAPL     | sma_crossover | 20Y        |         3.4494 |        0.1575 |           3.29 |          179 |
+| AAPL     | sma_crossover | 30Y        |         4.9886 |        0.3995 |           4.84 |          283 |
+| AAPL     | sma_crossover | 40Y        |         6.6979 |        0.4394 |           6.92 |          361 |
+| AAPL     | rsi_reversion | 5Y         |         0.9211 |        0.0679 |           0.11 |            9 |
+| AAPL     | rsi_reversion | 10Y        |         1.6824 |        0.1    |           0.23 |           24 |
+| AAPL     | rsi_reversion | 20Y        |         3.6946 |        0.0555 |           0.3  |           33 |
+| AAPL     | rsi_reversion | 30Y        |         5.3232 |        0.5888 |           2.11 |           44 |
+| AAPL     | rsi_reversion | 40Y        |         7.5388 |        0.0961 |           5.82 |           64 |
+| BTC-USD  | sma_crossover | 5Y         |         1.3997 |        0.1083 |           0.27 |           80 |
+| BTC-USD  | sma_crossover | 10Y        |         2.764  |        0.2167 |           0.91 |          140 |
+| BTC-USD  | rsi_reversion | 5Y         |         1.4839 |        0.169  |           0.18 |           15 |
+| BTC-USD  | rsi_reversion | 10Y        |         2.7738 |        0.234  |           1.38 |           31 |
+| EURUSD=X | sma_crossover | 5Y         |         1.0914 |        0.1558 |           0.02 |           45 |
+| EURUSD=X | sma_crossover | 10Y        |         1.8506 |        0.1526 |           0.1  |           95 |
+| EURUSD=X | sma_crossover | 20Y        |         4.2705 |        0.6546 |           0.14 |          201 |
+| EURUSD=X | rsi_reversion | 5Y         |         1.1732 |        0.1454 |           0.15 |            8 |
+| EURUSD=X | rsi_reversion | 10Y        |         2.099  |        0.2121 |           0.04 |           14 |
+| EURUSD=X | rsi_reversion | 20Y        |         4.1905 |        0.5536 |           0.36 |           26 |

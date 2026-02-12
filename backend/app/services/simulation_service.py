@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from app.models import Asset, Simulation, SimulationEquityPoint, SimulationTrade
 from app.backtest.engine import run_backtest
-from app.crud_simulations import save_simulation
+from app.db.crud_simulations import save_simulation
 from app.schemas.simulations import (
     BenchmarkMetrics,
     EquityPoint,
