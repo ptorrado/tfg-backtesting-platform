@@ -63,6 +63,15 @@ export type SimulationSummary = {
   params?: Record<string, number> | null;
 };
 
+// Paginated response for list simulations
+export type PaginatedSimulationResponse = {
+  items: SimulationSummary[];
+  total: number;
+  page: number;
+  page_size: number;
+  total_pages: number;
+};
+
 // Detalle completo de una simulación (run y get_simulation)
 export type SimulationDetail = {
   id: number;
@@ -134,12 +143,16 @@ export async function listSimulations(params?: {
   order_by?: "created_at" | "profit_loss";
   direction?: "asc" | "desc";
   asset?: string;
-}): Promise<SimulationSummary[]> {
+  page?: number;
+  page_size?: number;
+}): Promise<PaginatedSimulationResponse> {
   const query = new URLSearchParams();
 
   if (params?.order_by) query.set("order_by", params.order_by);
   if (params?.direction) query.set("direction", params.direction);
   if (params?.asset) query.set("asset", params.asset);
+  if (params?.page) query.set("page", params.page.toString());
+  if (params?.page_size) query.set("page_size", params.page_size.toString());
 
   const url =
     query.toString().length > 0
@@ -153,7 +166,7 @@ export async function listSimulations(params?: {
     throw new Error(`API error (${res.status}): ${text}`);
   }
 
-  return (await res.json()) as SimulationSummary[];
+  return (await res.json()) as PaginatedSimulationResponse;
 }
 
 export async function deleteSimulation(id: number): Promise<void> {

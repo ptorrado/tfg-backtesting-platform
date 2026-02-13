@@ -178,12 +178,20 @@ def list_simulations(
     order_by: str = "created_at",
     direction: str = "desc",
     asset: Optional[str] = None,
-    limit: int = 200,
-) -> List[SimulationSummary]:
+    page: int = 1,
+    page_size: int = 50,
+) -> Dict[str, Any]:
     """
-    List simulations for the History view.
+    List simulations for the History view with pagination.
     Supports sorting and optional filtering by asset symbol.
     Excludes the market benchmark runs.
+    
+    Returns a dictionary with:
+    - items: List of SimulationSummary
+    - total: Total count of simulations
+    - page: Current page number
+    - page_size: Items per page
+    - total_pages: Total number of pages
     """
     order_by = order_by.lower().strip()
     direction = direction.lower().strip()
@@ -194,7 +202,13 @@ def list_simulations(
         )
     if direction not in {"asc", "desc"}:
         raise HTTPException(status_code=400, detail="direction must be 'asc' or 'desc'")
+    
+    if page < 1:
+        raise HTTPException(status_code=400, detail="page must be >= 1")
+    if page_size < 1 or page_size > 200:
+        raise HTTPException(status_code=400, detail="page_size must be between 1 and 200")
 
+    # Base query
     query = (
         db.query(Simulation, Asset)
         .join(Asset, Simulation.asset_id == Asset.id)
@@ -202,8 +216,22 @@ def list_simulations(
     )
 
     if asset:
-        query = query.filter(Asset.symbol == asset)
+        # Search in both asset symbol and batch name (partial, case-insensitive)
+        from sqlalchemy import or_
+        query = query.filter(
+            or_(
+                Asset.symbol.ilike(f"%{asset}%"),
+                Simulation.batch_name.ilike(f"%{asset}%")
+            )
+        )
 
+    # Get total count before pagination
+    total = query.count()
+    
+    # Calculate total pages
+    total_pages = (total + page_size - 1) // page_size if total > 0 else 0
+
+    # Apply ordering
     expr = (
         Simulation.final_equity - Simulation.initial_capital
         if order_by == "profit_loss"
@@ -211,9 +239,12 @@ def list_simulations(
     )
 
     query = query.order_by(asc(expr) if direction == "asc" else desc(expr))
+    
+    # Apply pagination
+    offset = (page - 1) * page_size
+    rows = query.limit(page_size).offset(offset).all()
 
-    rows = query.limit(limit).all()
-
+    # Build response items
     out: List[SimulationSummary] = []
     for sim, asset_row in rows:
         profit_loss = float(sim.final_equity) - float(sim.initial_capital)
@@ -240,7 +271,13 @@ def list_simulations(
             )
         )
 
-    return out
+    return {
+        "items": out,
+        "total": total,
+        "page": page,
+        "page_size": page_size,
+        "total_pages": total_pages,
+    }
 
 
 def get_simulation_detail(db: Session, sim_id: int) -> SimulationDetail:

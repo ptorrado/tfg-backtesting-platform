@@ -10,6 +10,7 @@ import { HistoryHeader } from "../components/features/history/HistoryHeader";
 import { HistoryFilters } from "../components/features/history/HistoryFilters";
 import { HistoryGrid } from "../components/features/history/HistoryGrid";
 import { HistoryTable } from "../components/features/history/HistoryTable";
+import { HistoryPagination } from "../components/features/history/HistoryPagination";
 
 // Si quisiéramos extraer también el diálogo de confirmación de borrado, podríamos hacerlo.
 // Por ahora lo dejaré aquí o usaré un simple confirm() o un componente de UI si existe.
@@ -44,6 +45,11 @@ export default function History() {
     handleAskDeleteBatch,
     handleCancelDelete,
     handleConfirmDelete,
+    page,
+    setPage,
+    pageSize,
+    totalSimulations,
+    totalPages,
   } = useHistory();
 
   return (
@@ -90,22 +96,34 @@ export default function History() {
               </p>
             </CardContent>
           </Card>
-        ) : viewMode === "cards" ? (
-          <HistoryGrid
-            items={items}
-            onOpenSingle={handleOpenSingle}
-            onOpenBatch={handleOpenBatch}
-            onAskDeleteSingle={handleAskDeleteSingle}
-            onAskDeleteBatch={handleAskDeleteBatch}
-          />
         ) : (
-          <HistoryTable
-            items={items}
-            onOpenSingle={handleOpenSingle}
-            onOpenBatch={handleOpenBatch}
-            onAskDeleteSingle={handleAskDeleteSingle}
-            onAskDeleteBatch={handleAskDeleteBatch}
-          />
+          <>
+            {viewMode === "cards" ? (
+              <HistoryGrid
+                items={items}
+                onOpenSingle={handleOpenSingle}
+                onOpenBatch={handleOpenBatch}
+                onAskDeleteSingle={handleAskDeleteSingle}
+                onAskDeleteBatch={handleAskDeleteBatch}
+              />
+            ) : (
+              <HistoryTable
+                items={items}
+                onOpenSingle={handleOpenSingle}
+                onOpenBatch={handleOpenBatch}
+                onAskDeleteSingle={handleAskDeleteSingle}
+                onAskDeleteBatch={handleAskDeleteBatch}
+              />
+            )}
+
+            <HistoryPagination
+              page={page}
+              totalPages={totalPages}
+              totalSimulations={totalSimulations}
+              pageSize={pageSize}
+              onPageChange={setPage}
+            />
+          </>
         )}
 
         {/* Delete Confirmation Overlay (Simple implementation) */}

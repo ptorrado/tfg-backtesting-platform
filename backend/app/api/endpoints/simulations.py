@@ -2,11 +2,12 @@ from __future__ import annotations
 
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
 from app.db import get_db
 from app.schemas.simulations import (
+    PaginatedSimulationResponse,
     SimulationDetail,
     SimulationRequest,
     SimulationSummary,
@@ -28,14 +29,24 @@ def run_simulation(
     return run_and_store_simulation(db, payload)
 
 
-@router.get("", response_model=List[SimulationSummary])
+@router.get("", response_model=PaginatedSimulationResponse)
 def list_simulations_endpoint(
     order_by: str = "created_at",
     direction: str = "desc",
     asset: Optional[str] = None,
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=50, ge=1, le=200),
     db: Session = Depends(get_db),
-) -> List[SimulationSummary]:
-    return list_simulations(db, order_by=order_by, direction=direction, asset=asset)
+) -> PaginatedSimulationResponse:
+    result = list_simulations(
+        db, 
+        order_by=order_by, 
+        direction=direction, 
+        asset=asset,
+        page=page,
+        page_size=page_size
+    )
+    return PaginatedSimulationResponse(**result)
 
 
 @router.get("/{sim_id}", response_model=SimulationDetail)

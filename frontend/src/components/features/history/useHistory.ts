@@ -28,18 +28,46 @@ export function useHistory() {
     const [assetFilter, setAssetFilter] = useState("");
     const [sortBy, setSortBy] = useState<SortBy>("created_at");
     const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
+    const [page, setPage] = useState(1);
+    const [pageSize] = useState(50);
 
     const [itemToDelete, setItemToDelete] = useState<HistoryItem | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
 
     const {
-        data: simulations = [],
+        data: paginatedData,
         isLoading,
         isError,
-    } = useQuery<Simulation[]>({
-        queryKey: ["simulations"],
-        queryFn: () => listSimulations(),
+    } = useQuery({
+        queryKey: ["simulations", { page, pageSize, assetFilter, sortBy, sortDirection }],
+        queryFn: () => listSimulations({
+            page,
+            page_size: pageSize,
+            asset: assetFilter || undefined,
+            order_by: sortBy,
+            direction: sortDirection,
+        }),
     });
+
+    const simulations = paginatedData?.items || [];
+    const totalSimulations = paginatedData?.total || 0;
+    const totalPages = paginatedData?.total_pages || 0;
+
+    // Reset to page 1 when filters change
+    const handleAssetFilterChange = (value: React.SetStateAction<string>) => {
+        setAssetFilter(value);
+        setPage(1);
+    };
+
+    const handleSortByChange = (value: React.SetStateAction<SortBy>) => {
+        setSortBy(value);
+        setPage(1);
+    };
+
+    const handleSortDirectionChange = (value: React.SetStateAction<SortDirection>) => {
+        setSortDirection(value);
+        setPage(1);
+    };
 
     // ====== Filtro + agrupación por batch + ordenación ======
     const processedItems: HistoryItem[] = useMemo(() => {
@@ -86,35 +114,9 @@ export function useHistory() {
             });
         });
 
-        // 4) Filtro por asset (si se ha puesto algo)
-        const filtered = items.filter((item) => {
-            if (!assetFilter.trim()) return true;
-            const needle = assetFilter.trim().toLowerCase();
-
-            if (item.kind === "single") {
-                return item.sim.asset.toLowerCase().includes(needle);
-            } else {
-                return item.simulations.some((s) =>
-                    s.asset.toLowerCase().includes(needle)
-                );
-            }
-        });
-
-        // 5) Ordenación
-        const sorted = filtered.slice().sort((a, b) => {
-            if (sortBy === "created_at") {
-                const tA = new Date(getItemCreatedAt(a)).getTime();
-                const tB = new Date(getItemCreatedAt(b)).getTime();
-                return sortDirection === "desc" ? tB - tA : tA - tB;
-            } else {
-                const pA = getItemProfitLoss(a);
-                const pB = getItemProfitLoss(b);
-                return sortDirection === "desc" ? pB - pA : pA - pB;
-            }
-        });
-
-        return sorted;
-    }, [simulations, assetFilter, sortBy, sortDirection]);
+        // Note: Filtering and sorting are now handled by the backend
+        return items;
+    }, [simulations]);
 
     // ====== Navegación ======
 
@@ -179,11 +181,11 @@ export function useHistory() {
         viewMode,
         setViewMode,
         assetFilter,
-        setAssetFilter,
+        setAssetFilter: handleAssetFilterChange,
         sortBy,
-        setSortBy,
+        setSortBy: handleSortByChange,
         sortDirection,
-        setSortDirection,
+        setSortDirection: handleSortDirectionChange,
         items: processedItems,
         isLoading,
         isError,
@@ -195,5 +197,11 @@ export function useHistory() {
         handleAskDeleteBatch,
         handleCancelDelete,
         handleConfirmDelete,
+        // Pagination
+        page,
+        setPage,
+        pageSize,
+        totalSimulations,
+        totalPages,
     };
 }
