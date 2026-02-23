@@ -114,9 +114,28 @@ export function useHistory() {
             });
         });
 
-        // Note: Filtering and sorting are now handled by the backend
+        // We must sort the final grouped items on the frontend
+        // because the map grouping places singles before batches,
+        // ignoring the descending/ascending backend order between them.
+        items.sort((a, b) => {
+            let valA: number;
+            let valB: number;
+
+            if (sortBy === "profit_loss") {
+                valA = getItemProfitLoss(a);
+                valB = getItemProfitLoss(b);
+            } else {
+                valA = new Date(getItemCreatedAt(a)).getTime();
+                valB = new Date(getItemCreatedAt(b)).getTime();
+            }
+
+            if (valA < valB) return sortDirection === "asc" ? -1 : 1;
+            if (valA > valB) return sortDirection === "asc" ? 1 : -1;
+            return 0;
+        });
+
         return items;
-    }, [simulations]);
+    }, [simulations, sortBy, sortDirection]);
 
     // ====== Navegación ======
 

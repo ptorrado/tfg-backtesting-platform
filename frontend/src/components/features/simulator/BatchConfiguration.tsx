@@ -241,7 +241,7 @@ const BatchConfiguration: React.FC<BatchConfigurationProps> = (
             }}
             className={`flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium border transition-all
               ${active
-                ? "bg-primary/10 border-primary/50 text-primary shadow-sm"
+                ? "bg-accent border-border text-foreground shadow-sm"
                 : "bg-muted/10 border-transparent text-muted-foreground hover:bg-muted/20 hover:text-foreground"
               }`}
           >
@@ -259,7 +259,7 @@ const BatchConfiguration: React.FC<BatchConfigurationProps> = (
       {/* Asset selection block */}
       <div className="rounded-xl border border-border bg-card/30 p-5">
         <div className="flex items-center gap-2 text-sm font-semibold text-foreground mb-4">
-          <Layers className="w-4 h-4 text-primary" />
+          <Layers className="w-4 h-4 text-foreground" />
           <span>Asset Selection</span>
         </div>
 
@@ -282,7 +282,7 @@ const BatchConfiguration: React.FC<BatchConfigurationProps> = (
               </div>
               <input
                 type="text"
-                className="w-full bg-background border border-border text-foreground h-11 rounded-lg pl-9 pr-10 text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-all"
+                className="w-full bg-input border border-border text-foreground h-11 rounded-lg pl-9 pr-10 text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-all hover:bg-accent/50"
                 placeholder="Search & select multiple assets..."
                 value={assetQuery}
                 onChange={(e) => {
@@ -342,7 +342,7 @@ const BatchConfiguration: React.FC<BatchConfigurationProps> = (
                         <span className="flex items-center gap-2 text-xs text-muted-foreground">
                           {CATEGORY_LABELS[category]}
                           {active && (
-                            <Check className="w-4 h-4 text-primary" />
+                            <Check className="w-4 h-4 text-foreground" />
                           )}
                         </span>
                       </button>
@@ -401,7 +401,7 @@ const BatchConfiguration: React.FC<BatchConfigurationProps> = (
         {/* Asset selection (base asset) */}
         <div className="rounded-xl border border-border bg-card/30 p-5">
           <div className="flex items-center gap-2 text-sm font-semibold text-foreground mb-4">
-            <Layers className="w-4 h-4 text-primary" />
+            <Layers className="w-4 h-4 text-foreground" />
             <span>Asset Selection</span>
           </div>
 
@@ -424,7 +424,7 @@ const BatchConfiguration: React.FC<BatchConfigurationProps> = (
                 </div>
                 <input
                   type="text"
-                  className="w-full bg-background border border-border text-foreground h-11 rounded-lg pl-9 pr-10 text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-all"
+                  className="w-full bg-input border border-border text-foreground h-11 rounded-lg pl-9 pr-10 text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-all hover:bg-accent/50"
                   placeholder="Search base asset..."
                   value={baseAssetQuery}
                   onChange={(e) => {
@@ -487,7 +487,7 @@ const BatchConfiguration: React.FC<BatchConfigurationProps> = (
                           <span className="flex items-center gap-2 text-xs text-muted-foreground">
                             {CATEGORY_LABELS[category]}
                             {selected && (
-                              <Check className="w-4 h-4 text-primary" />
+                              <Check className="w-4 h-4 text-foreground" />
                             )}
                           </span>
                         </button>
@@ -498,9 +498,9 @@ const BatchConfiguration: React.FC<BatchConfigurationProps> = (
               )}
 
               {baseAsset && baseAssetRow && (
-                <div className="mt-4 rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-2">
-                  <h4 className="text-xs font-semibold text-primary uppercase tracking-wide flex items-center gap-2">
-                    <Check className="w-3 h-3" />
+                <div className="mt-4 rounded-lg border border-border bg-input p-4 space-y-2">
+                  <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-2">
+                    <Check className="w-3 h-3 text-foreground" />
                     Selected Asset
                   </h4>
                   <div className="flex justify-between text-sm">
@@ -544,19 +544,19 @@ const BatchConfiguration: React.FC<BatchConfigurationProps> = (
               type="button"
               onClick={() => setBatchType("assets")}
               className={`relative group flex flex-col gap-3 rounded-xl border p-5 text-left transition-all duration-200 ${batchType === "assets"
-                ? "bg-primary/5 border-primary ring-1 ring-primary/20 shadow-md"
+                ? "bg-accent border-border ring-1 ring-border shadow-md"
                 : "bg-card border-border hover:bg-accent/50 hover:border-accent-foreground/20"
                 }`}
             >
               <div className="flex items-center justify-between w-full">
-                <div className={`p-2 rounded-lg ${batchType === "assets" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground group-hover:text-foreground"
+                <div className={`p-2 rounded-lg ${batchType === "assets" ? "bg-accent text-foreground border border-border" : "bg-muted text-muted-foreground group-hover:text-foreground"
                   }`}>
                   <Layers className="w-5 h-5" />
                 </div>
-                {batchType === "assets" && <Check className="w-5 h-5 text-primary" />}
+                {batchType === "assets" && <Check className="w-5 h-5 text-foreground" />}
               </div>
               <div>
-                <div className={`text-base font-semibold mb-1.5 ${batchType === "assets" ? "text-primary" : "text-foreground"
+                <div className={`text-base font-semibold mb-1.5 ${batchType === "assets" ? "text-foreground" : "text-foreground"
                   }`}>
                   Multi-Asset Analysis
                 </div>
@@ -570,19 +570,19 @@ const BatchConfiguration: React.FC<BatchConfigurationProps> = (
               type="button"
               onClick={() => setBatchType("algorithms")}
               className={`relative group flex flex-col gap-3 rounded-xl border p-5 text-left transition-all duration-200 ${batchType === "algorithms"
-                ? "bg-primary/5 border-primary ring-1 ring-primary/20 shadow-md"
+                ? "bg-accent border-border ring-1 ring-border shadow-md"
                 : "bg-card border-border hover:bg-accent/50 hover:border-accent-foreground/20"
                 }`}
             >
               <div className="flex items-center justify-between w-full">
-                <div className={`p-2 rounded-lg ${batchType === "algorithms" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground group-hover:text-foreground"
+                <div className={`p-2 rounded-lg ${batchType === "algorithms" ? "bg-accent text-foreground border border-border" : "bg-muted text-muted-foreground group-hover:text-foreground"
                   }`}>
                   <GitBranch className="w-5 h-5" />
                 </div>
-                {batchType === "algorithms" && <Check className="w-5 h-5 text-primary" />}
+                {batchType === "algorithms" && <Check className="w-5 h-5 text-foreground" />}
               </div>
               <div>
-                <div className={`text-base font-semibold mb-1.5 ${batchType === "algorithms" ? "text-primary" : "text-foreground"
+                <div className={`text-base font-semibold mb-1.5 ${batchType === "algorithms" ? "text-foreground" : "text-foreground"
                   }`}>
                   Multi-Strategy Analysis
                 </div>
@@ -606,10 +606,10 @@ const BatchConfiguration: React.FC<BatchConfigurationProps> = (
 
         {/* Sidebar Configuration Column */}
         <div className="md:col-span-4 space-y-6">
-          <Card className="glass-card border-white/10 bg-card/50 h-fit sticky top-6">
-            <CardHeader className="pb-3 border-b border-white/5">
+          <Card className="glass-card border-border bg-card/50 h-fit sticky top-6">
+            <CardHeader className="pb-3 border-b border-border">
               <CardTitle className="text-base font-semibold flex items-center gap-2">
-                <Check className="w-4 h-4 text-emerald-500" />
+                <Check className="w-4 h-4 text-foreground" />
                 Batch Details
               </CardTitle>
             </CardHeader>
@@ -620,7 +620,7 @@ const BatchConfiguration: React.FC<BatchConfigurationProps> = (
                 </label>
                 <input
                   type="text"
-                  className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-all"
+                  className="w-full bg-input border border-border rounded-lg px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-all hover:bg-accent/50"
                   placeholder="e.g. Q1 Tech Momentum"
                   value={batchName}
                   onChange={(e) => setBatchName(e.target.value)}
@@ -630,11 +630,11 @@ const BatchConfiguration: React.FC<BatchConfigurationProps> = (
                 </p>
               </div>
 
-              <div className="space-y-2 pt-2 border-t border-white/5">
+              <div className="space-y-2 pt-2 border-t border-border mt-4">
                 <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Summary
                 </label>
-                <div className="rounded-lg bg-black/20 p-3 space-y-2 border border-white/5">
+                <div className="rounded-lg bg-accent/20 p-3 space-y-2 border border-border">
                   <div className="flex justify-between text-xs">
                     <span className="text-muted-foreground">Mode</span>
                     <span className="font-medium text-foreground">

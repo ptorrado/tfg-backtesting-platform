@@ -55,7 +55,7 @@ export function HistoryGrid({
                                     <div className="flex items-center gap-2">
                                         <div>{getAssetIcon()}</div>
                                         <div>
-                                            <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors flex items-center gap-2">
+                                            <h3 className="font-semibold text-foreground group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors flex items-center gap-2">
                                                 {sim.asset}
                                                 {sim.params && Object.keys(sim.params).length > 0 && (
                                                     <Badge variant="outline" className="text-[10px] bg-orange-500/10 text-orange-400 border-orange-500/30 px-1.5 py-0 h-5">
@@ -117,7 +117,7 @@ export function HistoryGrid({
 
                                     <div className="flex items-center justify-between">
                                         <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Period</span>
-                                        <span className="text-xs text-gray-300">
+                                        <span className="text-xs text-muted-foreground">
                                             {format(new Date(sim.start_date), "yyyy/MM/dd")} -{" "}
                                             {format(new Date(sim.end_date), "yyyy/MM/dd")}
                                         </span>
@@ -176,7 +176,7 @@ export function HistoryGrid({
                                     <div className="flex items-center gap-2">
                                         <div>{getAssetIcon()}</div>
                                         <div>
-                                            <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors flex items-center gap-2 flex-wrap">
+                                            <h3 className="font-semibold text-foreground group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors flex items-center gap-2 flex-wrap">
                                                 {title}
                                                 <div className="flex items-center gap-1.5">
                                                     <Badge

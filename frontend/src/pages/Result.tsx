@@ -144,12 +144,12 @@ export default function Result() {
   // ---------- Loading ----------
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0f1419] p-4 md:p-8">
+      <div className="min-h-screen bg-background p-4 md:p-8">
         <div className="max-w-7xl mx-auto space-y-6">
-          <Skeleton className="h-12 w-64 bg-white/5" />
+          <Skeleton className="h-12 w-64 bg-accent/50" />
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {Array.from({ length: 4 }).map((_, i) => (
-              <Skeleton key={i} className="h-32 bg-white/5" />
+              <Skeleton key={i} className="h-32 bg-accent/50" />
             ))}
           </div>
         </div>
@@ -160,9 +160,9 @@ export default function Result() {
   // ---------- Error / nada ----------
   if (error || simulations.length === 0) {
     return (
-      <div className="min-h-screen bg-[#0f1419] p-8 flex items-center justify-center">
+      <div className="min-h-screen bg-background p-8 flex items-center justify-center">
         <div className="text-center">
-          <p className="text-gray-400 mb-4">
+          <p className="text-muted-foreground mb-4">
             Simulation not found. Run a new one from the simulator.
           </p>
           <Button onClick={() => navigate(createPageUrl("Simulator"))}>
@@ -186,7 +186,7 @@ export default function Result() {
               <Button
                 variant="ghost"
                 onClick={() => navigate(createPageUrl("History"))}
-                className="mb-3 text-muted-foreground hover:text-foreground hover:bg-white/5"
+                className="mb-3 text-muted-foreground hover:text-foreground hover:bg-accent/50"
               >
                 <ArrowLeft className="w-4 h-4 mr-2" strokeWidth={2} />
                 Back to History
@@ -201,7 +201,7 @@ export default function Result() {
             <Button
               variant="ghost"
               onClick={() => navigate(createPageUrl("Simulator"))}
-              className="text-muted-foreground hover:text-foreground hover:bg-white/5"
+              className="text-muted-foreground hover:text-foreground hover:bg-accent/50"
             >
               <Plus className="w-4 h-4 mr-2" strokeWidth={2} />
               New Simulation
@@ -287,7 +287,7 @@ export default function Result() {
     });
 
   return (
-    <div className="min-h-screen bg-[#0f1419] p-4 md:p-8">
+    <div className="min-h-screen bg-background p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex items-start justify-between mb-8">
@@ -295,22 +295,22 @@ export default function Result() {
             <Button
               variant="ghost"
               onClick={() => navigate(createPageUrl("History"))}
-              className="mb-3 text-gray-400 hover:text-gray-200 hover:bg-white/5"
+              className="mb-3 text-muted-foreground hover:text-foreground hover:bg-accent/50"
             >
               <ArrowLeft className="w-4 h-4 mr-2" strokeWidth={2} />
               Back to History
             </Button>
-            <h1 className="text-3xl font-bold text-gray-100 mb-1">
+            <h1 className="text-3xl font-bold text-foreground mb-1">
               Batch Results
             </h1>
-            <p className="text-gray-400 text-sm">
+            <p className="text-muted-foreground text-sm">
               {batchLabel} • {simulations.length} simulations
             </p>
           </div>
           <Button
             variant="ghost"
             onClick={() => navigate(createPageUrl("Simulator"))}
-            className="text-gray-400 hover:text-gray-200 hover:bg-white/5"
+            className="text-muted-foreground hover:text-foreground hover:bg-accent/50"
           >
             <Plus className="w-4 h-4 mr-2" strokeWidth={2} />
             New Simulation

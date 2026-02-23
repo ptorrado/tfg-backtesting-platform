@@ -157,7 +157,7 @@ const AssetSelector: React.FC<AssetSelectorProps> = ({
                     setQuery("");
                   }}
                   className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-medium border transition-all ${active
-                    ? "bg-primary/20 border-primary/50 text-foreground shadow-sm"
+                    ? "bg-accent border-border text-foreground shadow-sm"
                     : "bg-muted/20 border-border text-muted-foreground hover:bg-accent/50 hover:border-border hover:text-foreground"
                     }`}
                 >
@@ -241,7 +241,7 @@ const AssetSelector: React.FC<AssetSelectorProps> = ({
                       <span className="flex items-center gap-2 text-xs text-muted-foreground">
                         {getCategoryLabel(category)}
                         {selected && (
-                          <Check className="w-4 h-4 text-primary" />
+                          <Check className="w-4 h-4 text-foreground" />
                         )}
                       </span>
                     </button>

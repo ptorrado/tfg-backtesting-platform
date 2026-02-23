@@ -1,0 +1,210 @@
+﻿================================================================================
+CONCURRENCY & LOAD TESTING BENCHMARK
+================================================================================
+
+Test Configuration:
+  Asset: AAPL
+  Algorithm: sma_crossover
+  Time Range: 2021-02-24 to 2026-02-23 (5 years)
+  Initial Capital: $10,000
+
+Hardware Info:
+  CPU Cores: 4 physical, 8 logical
+  Total RAM: 15.7 GB
+
+================================================================================
+
+CONCURRENCY TEST
+Each test simulates N users launching a simulation simultaneously.
+All requests execute in parallel using thread pool.
+
+Testing with 1 concurrent user(s)...
+
+  [ An├ílisis interactivo de Concurrencia para 1 usuarios ]
+  Nota para entender la concurrencia: 'Inicio' y 'Fin' son segundos desde
+  que empez├│ la prueba. Si varias simulaciones tienen tiempos de inicio
+  y fin que se solapan, significa que se ejecutaron a la vez (paralelismo).
+  Si una empieza justo cuando acaba la anterior, se ejecutaron en secuencia.
+
+    Simulaci├│n      T. Espera (s)    T. Ejecuci├│n (s)    T. Total (s)    Inicio en (s)    Fin en (s)
+    ------------  ---------------  ------------------  --------------  ---------------  ------------
+    #1                      0.102               1.386           1.488            0.102         1.488
+
+  OK - Completed in 1.49s
+    - Throughput: 0.67 req/s
+    - Latency (mean): 1.39s
+
+Testing with 10 concurrent user(s)...
+
+  [ An├ílisis interactivo de Concurrencia para 10 usuarios ]
+  Nota para entender la concurrencia: 'Inicio' y 'Fin' son segundos desde
+  que empez├│ la prueba. Si varias simulaciones tienen tiempos de inicio
+  y fin que se solapan, significa que se ejecutaron a la vez (paralelismo).
+  Si una empieza justo cuando acaba la anterior, se ejecutaron en secuencia.
+
+    Simulaci├│n      T. Espera (s)    T. Ejecuci├│n (s)    T. Total (s)    Inicio en (s)    Fin en (s)
+    ------------  ---------------  ------------------  --------------  ---------------  ------------
+    #1                      0.101               5.74            5.841            0.101         5.841
+    #2                      0.103               5.996           6.099            0.103         6.099
+    #3                      0.105               5.949           6.054            0.105         6.054
+    #4                      0.108               5.745           5.853            0.108         5.853
+    #5                      0.114               5.532           5.646            0.114         5.646
+    #6                      0.116               5.965           6.081            0.116         6.081
+    #7                      0.121               5.944           6.065            0.121         6.065
+    #8                      0.156               5.408           5.564            0.156         5.564
+    #9                      0.211               5.785           5.996            0.211         5.996
+    #10                     0.26                5.753           6.013            0.26          6.013
+
+  OK - Completed in 6.10s
+    - Throughput: 1.64 req/s
+    - Latency (mean): 5.78s
+
+Testing with 20 concurrent user(s)...
+
+  [ An├ílisis interactivo de Concurrencia para 20 usuarios ]
+  Nota para entender la concurrencia: 'Inicio' y 'Fin' son segundos desde
+  que empez├│ la prueba. Si varias simulaciones tienen tiempos de inicio
+  y fin que se solapan, significa que se ejecutaron a la vez (paralelismo).
+  Si una empieza justo cuando acaba la anterior, se ejecutaron en secuencia.
+
+    Simulaci├│n      T. Espera (s)    T. Ejecuci├│n (s)    T. Total (s)    Inicio en (s)    Fin en (s)
+    ------------  ---------------  ------------------  --------------  ---------------  ------------
+    #1                      0.101              11.371          11.472            0.101        11.472
+    #2                      0.102              11.309          11.411            0.102        11.411
+    #3                      0.103              10.564          10.666            0.103        10.666
+    #4                      0.107              11.623          11.73             0.107        11.73
+    #5                      0.108              11.565          11.674            0.108        11.674
+    #6                      0.111               8.877           8.989            0.111         8.989
+    #7                      0.118              11.31           11.429            0.118        11.429
+    #8                      0.145              11.097          11.242            0.145        11.242
+    #9                      0.275              10.404          10.68             0.275        10.68
+    #10                     0.386              10.358          10.745            0.386        10.745
+    #11                     0.416               9.595          10.011            0.416        10.011
+    #12                     0.542              11.205          11.747            0.542        11.747
+    #13                     0.666              10.889          11.556            0.666        11.556
+    #14                     1.009               9.689          10.698            1.009        10.698
+    #15                     1.211               8.196           9.408            1.211         9.408
+    #16                     1.357              11.541          12.898            1.357        12.898
+    #17                     1.366              11.294          12.66             1.366        12.66
+    #18                     1.396              11.531          12.927            1.396        12.927
+    #19                     1.428              11.52           12.948            1.428        12.948
+    #20                     1.524              11.186          12.71             1.524        12.71
+
+  OK - Completed in 12.95s
+    - Throughput: 1.54 req/s
+    - Latency (mean): 10.76s
+
+Testing with 50 concurrent user(s)...
+
+  [ An├ílisis interactivo de Concurrencia para 50 usuarios ]
+  Nota para entender la concurrencia: 'Inicio' y 'Fin' son segundos desde
+  que empez├│ la prueba. Si varias simulaciones tienen tiempos de inicio
+  y fin que se solapan, significa que se ejecutaron a la vez (paralelismo).
+  Si una empieza justo cuando acaba la anterior, se ejecutaron en secuencia.
+
+    Simulaci├│n      T. Espera (s)    T. Ejecuci├│n (s)    T. Total (s)    Inicio en (s)    Fin en (s)
+    ------------  ---------------  ------------------  --------------  ---------------  ------------
+    #1                      0.101               9.773           9.874            0.101         9.874
+    #2                      0.102               9.689           9.791            0.102         9.791
+    #3                      0.103               9.792           9.895            0.103         9.895
+    #4                      0.104              13.163          13.267            0.104        13.267
+    #5                      0.106               8.511           8.617            0.106         8.617
+    #6                      0.108              10.818          10.926            0.108        10.926
+    #7                      0.113              12.2            12.313            0.113        12.313
+    #8                      0.115              11.624          11.738            0.115        11.738
+    #9                      0.128              11.633          11.762            0.128        11.762
+    #10                     0.163               9.306           9.469            0.163         9.469
+    #11                     0.329              11.308          11.638            0.329        11.638
+    #12                     0.546              15              15.547            0.546        15.547
+    #13                     0.717              14.134          14.851            0.717        14.851
+    #14                     1.028              12.974          14.001            1.028        14.001
+    #15                     1.123              12.9            14.023            1.123        14.023
+    #16                     1.151              31.922          33.073            1.151        33.073
+    #17                     1.23               24.346          25.576            1.23         25.576
+    #18                     1.367              31.493          32.86             1.367        32.86
+    #19                     1.465              28.448          29.913            1.465        29.913
+    #20                     1.81               23.109          24.919            1.81         24.919
+    #21                     2                  22.15           24.149            2            24.149
+    #22                     2.407              31.507          33.914            2.407        33.914
+    #23                     2.613              19.235          21.848            2.613        21.848
+    #24                     2.86               27.994          30.854            2.86         30.854
+    #25                     3                  23.366          26.365            3            26.365
+    #26                     3.308              26.232          29.54             3.308        29.54
+    #27                     3.81               29.004          32.813            3.81         32.813
+    #28                     3.866              27.673          31.538            3.866        31.538
+    #29                     3.976              30.125          34.101            3.976        34.101
+    #30                     4.184              29.624          33.808            4.184        33.808
+    #31                     4.427              28.07           32.497            4.427        32.497
+    #32                     4.475              17.009          21.484            4.475        21.484
+    #33                     4.479              28.562          33.041            4.479        33.041
+    #34                     4.584              27.671          32.255            4.584        32.255
+    #35                     4.615              26.266          30.882            4.615        30.882
+    #36                     4.704              18.828          23.533            4.704        23.533
+    #37                     4.706              28.269          32.975            4.706        32.975
+    #38                     4.715              14.696          19.412            4.715        19.412
+    #39                     4.717              16.25           20.968            4.717        20.968
+    #40                     4.723              16.889          21.612            4.723        21.612
+    #41                     4.727              27.858          32.585            4.727        32.585
+    #42                     4.862              15.117          19.979            4.862        19.979
+    #43                     4.865              29.247          34.112            4.865        34.112
+    #44                     4.867              27.703          32.57             4.867        32.57
+    #45                     4.893              28.383          33.276            4.893        33.276
+    #46                     4.895              19.075          23.97             4.895        23.97
+    #47                     4.901              15.338          20.238            4.901        20.238
+    #48                     4.906              20.477          25.383            4.906        25.383
+    #49                     4.909              29.175          34.084            4.909        34.084
+    #50                     4.912              18.194          23.106            4.912        23.106
+
+  OK - Completed in 34.12s
+    - Throughput: 1.47 req/s
+    - Latency (mean): 20.64s
+
+
+================================================================================
+DETAILED RESULTS
+================================================================================
+
+METRIC DEFINITIONS:
+  - Users: Number of concurrent simulations launched in parallel
+  - Batch Time: Wall-clock time from start until last request completes
+  - Latency Mean: Average time each individual request took to execute
+  - Latency P95: 95th percentile latency (95% of requests faster than this)
+  - Throughput: Requests completed per second (Users / Batch Time)
+
++---------+------------------+--------------------+-------------------+----------------------+----------+
+|   Users |   Batch Time (s) |   Latency Mean (s) |   Latency P95 (s) |   Throughput (req/s) |   Errors |
++=========+==================+====================+===================+======================+==========+
+|       1 |             1.49 |               1.39 |              1.39 |                 0.67 |        0 |
++---------+------------------+--------------------+-------------------+----------------------+----------+
+|      10 |             6.1  |               5.78 |              6    |                 1.64 |        0 |
++---------+------------------+--------------------+-------------------+----------------------+----------+
+|      20 |            12.95 |              10.76 |             11.62 |                 1.54 |        0 |
++---------+------------------+--------------------+-------------------+----------------------+----------+
+|      50 |            34.12 |              20.64 |             31.49 |                 1.47 |        0 |
++---------+------------------+--------------------+-------------------+----------------------+----------+
+
+================================================================================
+ANALYSIS
+================================================================================
+
+Scalability:
+  - Single user baseline: 1.39s per simulation
+  - 50 concurrent users: 20.64s per simulation
+  - Latency increase: 1388.9%
+
+Throughput:
+  ÔÇó Baseline: 0.67 req/s
+  ÔÇó Peak (50 users): 1.47 req/s
+  ÔÇó Throughput gain: 2.19x
+
+Bottleneck Analysis:
+  - Average throughput across all tests: 1.33 req/s
+  - Primary bottleneck: CPU-bound computation
+    (Backtest calculations dominate, limited by CPU cores)
+
+  - CPU cores available: 4 physical
+  - Theoretical max parallel simulations: ~8
+
+================================================================================
+BENCHMARK COMPLETE
+================================================================================

@@ -28,8 +28,8 @@ export default function MetricsCard({
     isPositive === true
       ? "text-green-400"
       : isPositive === false
-        ? "text-red-400"
-        : "text-gray-100"
+        ? "text-red-500"
+        : "text-foreground"
 
   const iconColorClass =
     isPositive === true

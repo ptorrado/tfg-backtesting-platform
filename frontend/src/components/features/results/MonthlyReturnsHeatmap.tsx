@@ -74,14 +74,14 @@ export default function MonthlyReturnsHeatmap({ data }: MonthlyReturnsHeatmapPro
 
         if (value > 0) {
             // Emerald
-            if (abs > 0.10) return "bg-emerald-500 text-white font-bold";
-            if (abs > 0.05) return "bg-emerald-500/70 text-white";
-            return "bg-emerald-500/30 text-emerald-400";
+            if (abs > 0.10) return "bg-emerald-500 text-emerald-950 font-bold";
+            if (abs > 0.05) return "bg-emerald-500/70 text-emerald-950 font-semibold";
+            return "bg-emerald-500/30 text-emerald-700 dark:text-emerald-400";
         } else {
             // Red
-            if (abs > 0.10) return "bg-red-500 text-white font-bold";
-            if (abs > 0.05) return "bg-red-500/70 text-white";
-            return "bg-red-500/30 text-red-300";
+            if (abs > 0.10) return "bg-red-500 text-red-950 font-bold";
+            if (abs > 0.05) return "bg-red-500/70 text-red-950 font-semibold";
+            return "bg-red-500/30 text-red-700 dark:text-red-300";
         }
     };
 
@@ -125,7 +125,7 @@ export default function MonthlyReturnsHeatmap({ data }: MonthlyReturnsHeatmapPro
                                         </td>
                                     ))}
                                     <td className="p-3 text-center font-bold text-foreground">
-                                        <span className={ytd >= 0 ? "text-emerald-400" : "text-destructive"}>
+                                        <span className={ytd >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-destructive"}>
                                             {(ytd * 100).toFixed(1)}%
                                         </span>
                                     </td>

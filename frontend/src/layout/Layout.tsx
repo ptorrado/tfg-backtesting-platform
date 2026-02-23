@@ -35,7 +35,7 @@ function SidebarCloseButton() {
   return (
     <button
       onClick={() => setOpenMobile(false)}
-      className="absolute top-4 right-4 p-2 hover:bg-white/10 rounded-lg transition-colors text-gray-400 hover:text-gray-200 lg:hidden"
+      className="absolute top-4 right-4 p-2 hover:bg-accent rounded-lg transition-colors text-muted-foreground hover:text-foreground lg:hidden"
     >
       <X className="w-5 h-5" strokeWidth={2} />
     </button>
@@ -96,23 +96,23 @@ export default function Layout({ children }: LayoutProps) {
         <Sidebar className="glass-sidebar border-r border-border !bg-background sticky top-0 h-screen z-30">
           <SidebarCloseButton />
 
-          <SidebarHeader className="border-b border-white/8 p-6">
+          <SidebarHeader className="border-b border-border p-6">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 bg-gradient-to-br from-slate-600 to-slate-700 rounded-xl flex items-center justify-center shadow-lg">
-                <BarChart3 className="w-5 h-5 text-slate-100" strokeWidth={2} />
+              <div className="w-9 h-9 bg-primary text-primary-foreground rounded-xl flex items-center justify-center shadow-lg">
+                <BarChart3 className="w-5 h-5" strokeWidth={2} />
               </div>
               <div>
-                <h2 className="font-semibold text-gray-100 text-base">
+                <h2 className="font-semibold text-foreground text-base">
                   {APP_NAME}
                 </h2>
-                <p className="text-xs text-gray-500">{APP_TAGLINE}</p>
+                <p className="text-xs text-muted-foreground">{APP_TAGLINE}</p>
               </div>
             </div>
           </SidebarHeader>
 
           <SidebarContent className="p-3">
             <SidebarGroup>
-              <SidebarGroupLabel className="text-xs font-medium text-gray-500 uppercase tracking-wider px-3 py-2 mb-1">
+              <SidebarGroupLabel className="text-xs font-medium text-muted-foreground uppercase tracking-wider px-3 py-2 mb-1">
                 Navigation
               </SidebarGroupLabel>
               <SidebarGroupContent>
@@ -122,8 +122,8 @@ export default function Layout({ children }: LayoutProps) {
                       <SidebarMenuButton
                         asChild
                         className={`transition-all duration-200 rounded-xl mb-1 ${location.pathname === item.url
-                          ? "bg-white/15 text-white border border-white/30"
-                          : "text-gray-400 hover:text-gray-200 hover:bg-white/5"
+                          ? "bg-accent text-accent-foreground font-medium border border-border"
+                          : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
                           }`}
                       >
                         <Link
@@ -131,7 +131,7 @@ export default function Layout({ children }: LayoutProps) {
                           className="flex items-center gap-3 px-3 py-2.5"
                         >
                           <item.icon className="w-4 h-4" strokeWidth={2} />
-                          <span className="font-medium text-sm">
+                          <span className="text-sm">
                             {item.title}
                           </span>
                         </Link>
@@ -143,23 +143,23 @@ export default function Layout({ children }: LayoutProps) {
             </SidebarGroup>
           </SidebarContent>
 
-          <SidebarFooter className="border-t border-white/8 p-4 mt-auto">
-            <div className="text-xs text-gray-500">
+          <SidebarFooter className="border-t border-border p-4 mt-auto">
+            <div className="text-xs text-muted-foreground">
               <div className="flex items-center justify-between mb-1">
                 <span>Version</span>
-                <span className="text-gray-400">0.1.0</span>
+                <span>0.1.0</span>
               </div>
             </div>
           </SidebarFooter>
         </Sidebar>
 
         <main className="flex-1 flex flex-col bg-background">
-          <header className="glass-card border-b border-white/5 px-6 py-4 sticky top-0 z-10">
+          <header className="glass-card border-b border-border px-6 py-4 sticky top-0 z-10">
             <div className="flex items-center gap-4">
-              <SidebarTrigger className="hover:bg-white/10 p-2 rounded-xl transition-colors duration-200 text-gray-300 hover:text-gray-100">
+              <SidebarTrigger className="hover:bg-accent p-2 rounded-xl transition-colors duration-200 text-muted-foreground hover:text-foreground">
                 <Menu className="w-5 h-5" strokeWidth={2} />
               </SidebarTrigger>
-              <h1 className="text-base font-semibold text-gray-100">
+              <h1 className="text-base font-semibold text-foreground">
                 {APP_NAME}
               </h1>
             </div>

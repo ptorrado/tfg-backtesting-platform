@@ -237,7 +237,7 @@ export default function SingleSimulationDashboard({ simulation: sim }: SingleSim
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.6 }}
                 >
-                    <TradesTable trades={trades} />
+                    <TradesTable trades={trades} assetSymbol={sim.asset} />
                 </motion.div>
             </div>
         </div>

@@ -85,7 +85,7 @@ def run_single_simulation_test(db, asset, algo_id, params, start, end):
         "sim_id": result.id
     }
 
-def run_concurrency_test(num_users, asset, algo_id, params, start, end):
+def run_concurrency_test(num_users, asset, algo_id, params, start, end, max_workers=None):
     """
     Simulate N concurrent users each launching a simulation.
     
@@ -94,26 +94,33 @@ def run_concurrency_test(num_users, asset, algo_id, params, start, end):
     - Individual latencies: How long each request took from start to finish
     - Throughput: Requests completed per second
     """
-    def task():
+    # Record batch start time here so tasks can calculate their wait time
+    batch_start = time.time()
+    
+    workers = max_workers if max_workers else num_users
+
+    def task(task_id):
         # Each thread gets its own DB session
         db = SessionLocal()
         try:
-            return run_single_simulation_test(db, asset, algo_id, params, start, end)
+            res = run_single_simulation_test(db, asset, algo_id, params, start, end)
+            res["task_id"] = task_id + 1
+            res["wait_time"] = res["start_time"] - batch_start
+            res["relative_start"] = res["start_time"] - batch_start
+            res["relative_end"] = res["end_time"] - batch_start
+            return res
         except Exception as e:
-            return {"error": str(e), "traceback": traceback.format_exc()}
+            return {"task_id": task_id + 1, "error": str(e), "traceback": traceback.format_exc()}
         finally:
             db.close()
-
-    # Record batch start time
-    batch_start = time.time()
-    
+            
     # Monitor CPU before starting
     cpu_before = get_process_cpu_percent()
     mem_before = get_process_memory()
     
     # Launch all requests concurrently using ThreadPool
-    with ThreadPoolExecutor(max_workers=num_users) as executor:
-        futures = [executor.submit(task) for _ in range(num_users)]
+    with ThreadPoolExecutor(max_workers=workers) as executor:
+        futures = [executor.submit(task, i) for i in range(num_users)]
         results = [f.result() for f in as_completed(futures)]
     
     # Record batch end time
@@ -131,6 +138,7 @@ def run_concurrency_test(num_users, asset, algo_id, params, start, end):
     if not successes:
         return {
             "users": num_users,
+            "max_workers": workers,
             "errors": len(errors),
             "success": False
         }
@@ -155,8 +163,35 @@ def run_concurrency_test(num_users, asset, algo_id, params, start, end):
     # Throughput = total completed / wall-clock time
     throughput = len(successes) / batch_wall_time if batch_wall_time > 0 else 0
     
+    # --- AÑADIDO PARA ENTENDER LA CONCURRENCIA ---
+    print(f"\n  [ Análisis interactivo de Concurrencia para {num_users} tareas simultáneas (Hilos/Workers: {workers}) ]")
+    print("  Nota para entender la concurrencia: 'Inicio' y 'Fin' son segundos desde")
+    print("  que empezó la prueba. Si varias simulaciones tienen tiempos de inicio")
+    print("  y fin que se solapan, significa que se ejecutaron a la vez (paralelismo).")
+    print("  Si una empieza justo cuando acaba la anterior, se ejecutaron en secuencia.")
+    print()
+    
+    successes.sort(key=lambda x: x["relative_start"])
+    detail_table = []
+    for r in successes:
+        detail_table.append({
+            "Simulación": f"#{r['task_id']}",
+            "T. Espera (s)": f"{r['wait_time']:.3f}",
+            "T. Ejecución (s)": f"{r['execution_time']:.3f}",
+            "T. Total (s)": f"{(r['wait_time'] + r['execution_time']):.3f}",
+            "Inicio en (s)": f"{r['relative_start']:.3f}",
+            "Fin en (s)": f"{r['relative_end']:.3f}"
+        })
+    
+    table_str = tabulate(detail_table, headers="keys", tablefmt="simple")
+    for line in table_str.split('\n'):
+        print("    " + line)
+    print()
+    # ------------------------------------------------
+    
     return {
         "users": num_users,
+        "max_workers": workers,
         "batch_wall_time": batch_wall_time,
         "latency_mean": latency_mean,
         "latency_min": latency_min,
@@ -214,16 +249,25 @@ def main():
     # ----------------------------------------------------------------
     # Concurrency / Load Testing
     # ----------------------------------------------------------------
-    print("CONCURRENCY TEST")
-    print("Each test simulates N users launching a simulation simultaneously.")
-    print("All requests execute in parallel using thread pool.")
+    print("CONCURRENCY TEST: COMPARACIÓN DE HILOS (MAX_WORKERS)")
+    print("Lanzando 50 simulaciones a la vez de 2 formas distintas:")
+    print(" 1) Limitando a 8 trabajadores (simulando los núcleos físicos/lógicos).")
+    print(" 2) Permitiendo 50 trabajadores a la vez.")
     print()
     
     concurrency_results = []
     
-    for users in CONCURRENT_USERS_LEVELS:
-        print(f"Testing with {users} concurrent user(s)...", flush=True)
-        stats = run_concurrency_test(users, asset, algo['id'], algo['params'], sim_start, sim_end)
+    test_cases = [
+        {"users": 50, "workers": 8},
+        {"users": 50, "workers": 50}
+    ]
+    
+    for case in test_cases:
+        users = case["users"]
+        workers = case["workers"]
+        
+        print(f"Probando {users} peticiones simultáneas con {workers} max_workers...", flush=True)
+        stats = run_concurrency_test(users, asset, algo['id'], algo['params'], sim_start, sim_end, max_workers=workers)
         
         if not stats["success"]:
             print(f"  FAILED - {stats['errors']} errors")
@@ -249,6 +293,7 @@ def main():
     
     print("METRIC DEFINITIONS:")
     print("  - Users: Number of concurrent simulations launched in parallel")
+    print("  - Max Workers: Number of threads processing the queue")
     print("  - Batch Time: Wall-clock time from start until last request completes")
     print("  - Latency Mean: Average time each individual request took to execute")
     print("  - Latency P95: 95th percentile latency (95% of requests faster than this)")
@@ -260,6 +305,7 @@ def main():
     for r in concurrency_results:
         table_data.append({
             "Users": r["users"],
+            "Max Workers": r["max_workers"],
             "Batch Time (s)": f"{r['batch_wall_time']:.2f}",
             "Latency Mean (s)": f"{r['latency_mean']:.2f}",
             "Latency P95 (s)": f"{r['latency_p95']:.2f}",

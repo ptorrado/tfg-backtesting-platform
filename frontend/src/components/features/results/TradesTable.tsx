@@ -22,9 +22,10 @@ export interface TradeRow {
 
 export interface TradesTableProps {
   trades: TradeRow[]
+  assetSymbol?: string
 }
 
-export default function TradesTable({ trades }: TradesTableProps) {
+export default function TradesTable({ trades, assetSymbol }: TradesTableProps) {
   const [currentPage, setCurrentPage] = React.useState(1);
   const itemsPerPage = 10;
   const totalPages = Math.ceil(trades.length / itemsPerPage);
@@ -40,6 +41,22 @@ export default function TradesTable({ trades }: TradesTableProps) {
 
   const goToPreviousPage = () => {
     if (currentPage > 1) setCurrentPage((p) => p - 1);
+  };
+
+  const formatQuantity = (qty: number) => {
+    const isCrypto = assetSymbol && (
+      assetSymbol.includes('BTC') ||
+      assetSymbol.includes('ETH') ||
+      assetSymbol.includes('SOL') ||
+      assetSymbol.includes('ADA') ||
+      assetSymbol.includes('XRP') ||
+      assetSymbol.includes('-USD')
+    );
+
+    return qty.toLocaleString(undefined, {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: isCrypto ? 5 : 3
+    });
   };
 
   return (
@@ -125,7 +142,7 @@ export default function TradesTable({ trades }: TradesTableProps) {
                       ${trade.price.toFixed(2)}
                     </TableCell>
                     <TableCell className="text-muted-foreground text-sm">
-                      {trade.quantity}
+                      {formatQuantity(trade.quantity)}
                     </TableCell>
                     <TableCell
                       className={`text-right font-semibold text-sm ${trade.profit_loss >= 0
@@ -145,7 +162,7 @@ export default function TradesTable({ trades }: TradesTableProps) {
 
         {/* Pagination Controls */}
         {trades.length > itemsPerPage && (
-          <div className="flex items-center justify-between px-4 py-3 border-t border-border bg-white/[0.01]">
+          <div className="flex items-center justify-between px-4 py-3 border-t border-border bg-accent/10">
             <p className="text-xs text-muted-foreground">
               Page {currentPage} of {totalPages}
             </p>

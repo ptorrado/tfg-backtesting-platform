@@ -363,11 +363,11 @@ const AlgorithmSelector: React.FC<AlgorithmSelectorProps> = (props) => {
                           {algo.category}
                         </span>
                       </div>
-                      <span className="text-[11px] text-gray-400">
+                      <span className="text-[11px] text-muted-foreground">
                         {algo.description}
                       </span>
                       {selected && (
-                        <div className="mt-1 text-xs text-primary flex items-center gap-1">
+                        <div className="mt-1 text-xs text-foreground flex items-center gap-1">
                           <Check className="w-3 h-3" />
                           Selected
                         </div>
